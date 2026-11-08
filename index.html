@@ -7998,10 +7998,33 @@
       function defaults() { return { v: 1, settings: { name: "", currency: "جنيه", theme: "auto", lastStudent: "", fs: 26 }, groups: [], students: [], academies: [], attendance: {}, payments: [], plans: [], progress: {}, marks: {}, games: {} } }
       var db = load();
       function load() { var d = defaults(); try { var s = localStorage.getItem(KEY); if (s) { var o = JSON.parse(s); Object.keys(d).forEach(function (k) { if (o[k] !== undefined) d[k] = o[k] }); d.settings = Object.assign(defaults().settings, o.settings || {}); if (migrate(d, o)) localStorage.setItem(KEY, JSON.stringify(d)) } } catch (e) { storageOk = false } return d }
+      /* تنظيف شكل الداتا المستوردة من JSON: تواريخ/أوقات/أيام بأي صيغة تتحوّل للصيغة اللي الحساب مستنيها */
+      function normDay(x) {
+        if (typeof x !== "string") return x; var t = x.trim().replace(/[٠-٩]/g, function (c) { return "٠١٢٣٤٥٦٧٨٩".indexOf(c) }).replace(/[۰-۹]/g, function (c) { return "۰۱۲۳۴۵۶۷۸۹".indexOf(c) });
+        var m = t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})(?:[T\s].*)?$/) || null, y, mo, da;
+        if (m) { y = m[1]; mo = m[2]; da = m[3] } else { m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/); if (!m) return x; da = m[1]; mo = m[2]; y = m[3] }
+        return y + "-" + ("0" + mo).slice(-2) + "-" + ("0" + da).slice(-2)
+      }
+      function normTime(x) {
+        if (typeof x !== "string") return x; var t = x.trim().replace(/[٠-٩]/g, function (c) { return "٠١٢٣٤٥٦٧٨٩".indexOf(c) }), m = t.match(/(\d{1,2})\s*[:.]\s*(\d{2})/); if (!m) return x;
+        var h = +m[1], mi = m[2]; if (/pm|م/i.test(t) && h < 12) h += 12; if (/am|ص/i.test(t) && h === 12) h = 0; return ("0" + h).slice(-2) + ":" + mi
+      }
+      function normData(d) {
+        var ch = false; function sd(o, k, f) { if (o && o[k] != null) { var v = f(o[k]); if (v !== o[k]) { o[k] = v; ch = true } } }
+        d.groups.forEach(function (g) {
+          sd(g, "date", normDay); sd(g, "until", normDay); sd(g, "time", normTime);
+          if (Array.isArray(g.days)) { var dd = g.days.map(String); if (dd.join() !== g.days.join() || g.days.some(function (x) { return typeof x !== "string" })) { g.days = dd; ch = true } }
+          if (g.times && typeof g.times === "object") for (var k in g.times) sd(g.times, k, normTime)
+        });
+        var A = d.attendance || {}, NA = {}, moved = false;
+        for (var k in A) { var r = A[k]; if (r && r.day) { var nd0 = normDay(r.day); if (nd0 !== r.day) { r.day = nd0; ch = true } var nk = (r.g != null ? r.g : k.split("|")[0]) + "|" + r.day; if (nk !== k && !A[nk] && !NA[nk]) { NA[nk] = r; moved = true; continue } } NA[k] = r }
+        if (moved) { d.attendance = NA; ch = true }
+        return ch
+      }
       function migrate(d, o) {
         var ch = false; d.groups.forEach(function (g) { if (!Array.isArray(g.students)) { g.students = []; ch = true } if (g.sched) { g.note = g.sched + (g.note ? " — " + g.note : ""); delete g.sched; ch = true } });
         d.students.forEach(function (s) { if ("group" in s) { var g = d.groups.filter(function (x) { return x.id === s.group })[0]; if (g && g.students.indexOf(s.id) < 0) g.students.push(s.id); delete s.group; ch = true } });
-        if (o && Array.isArray(o.sessions)) { o.sessions.forEach(function (x) { d.groups.push({ id: x.id, name: "", students: [x.student], date: x.date, time: x.time, dur: x.dur || 30, kind: x.kind || "regular", note: x.note || "" }) }); ch = ch || o.sessions.length > 0 } delete d.sessions; return ch
+        if (o && Array.isArray(o.sessions)) { o.sessions.forEach(function (x) { d.groups.push({ id: x.id, name: "", students: [x.student], date: x.date, time: x.time, dur: x.dur || 30, kind: x.kind || "regular", note: x.note || "" }) }); ch = ch || o.sessions.length > 0 } delete d.sessions; if (normData(d)) ch = true; return ch
       }
       function save() { try { localStorage.setItem(KEY, JSON.stringify(db)); return true } catch (e) { storageOk = false; return false } }
       function theme() { var t = db.settings.theme; if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t) }
@@ -12468,7 +12491,7 @@
           db.groups.forEach(function (g) {
             if (!g.date || (g.kind || "regular") !== "regular" || g.students.indexOf(st.id) < 0) return;
             var lo = since && since > g.date ? since : g.date;
-            for (var d = lo, i = 0; d <= today && i < 800; d = addDays(d, 1), i++) {
+            for (var d = lo, i = 0; d <= today && i < 4000; d = addDays(d, 1), i++) {
               if (!baseOcc(g, d) || isOff(st, d)) continue; if (!isDone(g, d)) continue; if (since && d === since && endMs(g, d) <= (ts || 0)) continue;
               n++; min += g.dur || 30
             }
