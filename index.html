@@ -14804,6 +14804,10 @@
       nav(); if (view === "reports") render()
     })();
   </script>
+  <script>
+    /* إعادة رسم الصفحة الحالية بعد ما كل السكربتات تتحمّل، عشان «اليوم» تظهر بالتصميم الجديد من أول مرة */
+    (function () { try { if (typeof route === "function") route(); else if (typeof render === "function") render(); } catch (e) { } })();
+  </script>
 </body>
 
 </html>
