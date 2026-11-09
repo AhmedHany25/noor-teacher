@@ -8166,7 +8166,7 @@
           + '<div class="card"><h2>نسخة احتياطية</h2><p class="mute">انسخ النص واحفظه في مكان آمن (ملاحظات أو واتساب لنفسك). للاستعادة الصقه واضغط استعادة.</p><textarea id="bk" placeholder="النسخة الاحتياطية"></textarea><div class="row" style="margin-top:8px"><button id="ex">نسخ بياناتي</button><button id="dlb" class="p">⬇️ تنزيل ملف</button><label class="btn">📂 اختيار ملف<input type="file" id="bkf" accept=".json,application/json" hidden></label><button id="im">استعادة من النص</button><button id="rs">مسح كل البيانات</button></div><div class="mute" id="bm"></div></div>'
           + '<div class="card"><h2>فحص النظام</h2>' + checks().map(function (c) { return '<div class="t"><span class="' + (c[1] ? "ok" : "no") + '">' + (c[1] ? "✓" : "✗") + "</span>" + c[0] + "</div>" }).join("") + "</div>"
       }
-      function render() { document.getElementById("v").innerHTML = (storageOk ? "" : '<div class="warn">⚠️ التخزين غير متاح في هذا المتصفح، البيانات لن تُحفظ.</div>') + ({ home: home, quran: quran, prefs: settings, groups: groupsV, acad: acadV }[view] || lockV)(); nav(); if (view === "quran") paginate(true); var t = document.getElementById("th"); if (t) t.value = db.settings.theme }
+      function render() { document.getElementById("v").innerHTML = ({ home: home, quran: quran, prefs: settings, groups: groupsV, acad: acadV }[view] || lockV)(); nav(); if (view === "quran") paginate(true); var t = document.getElementById("th"); if (t) t.value = db.settings.theme }
       function lockV() { var x = VIEWS.filter(function (v) { return v[0] === view })[0] || VIEWS[0]; return '<h1>' + x[1] + " " + x[2] + '</h1><div class="card">هذا القسم قيد البناء ضمن <b>فيز ' + AR(x[3]) + "</b>. راجع خارطة الطريق في الرئيسية.</div>" }
       function route() { var h = location.hash.slice(1); view = VIEWS.some(function (v) { return v[0] === h }) ? h : "home"; render(); window.scrollTo(0, 0) }
       document.addEventListener("click", function (e) {
@@ -13199,6 +13199,9 @@
     })();
   </script>
   <script>
+    var PV = 0, pvT = 0;
+  </script>
+  <script>
     /* ===== الصفحة الرئيسية «اليوم»: داشبورد مصغّر + تابات الأقسام ===== */
     (function () {
       var HT = "today";
@@ -13220,20 +13223,925 @@
         if (HT === "review") return h + (reviewHTML() || '<div class="card empty"><div style="font-size:42px">✅</div><p>مفيش حاجة محتاجة مراجعة. كل حصصك متسجّلة.</p></div>');
         if (HT === "money") {
           var L = salList(ym), rem = Math.max(0, du.tot - du.got);
-          return h + '<div class="hgrid">' + stat("💰", AR(du.tot), "مستحق لحد الآن", cur) + stat("✅", AR(du.got), "المستلم", cur, "ok") + stat("⏳", AR(rem), "متبقٍ عند الأكاديميات", cur, rem ? "bad" : "ok") + '</div>'
-            + '<div class="card"><h2>🧾 حسب الجهة</h2>' + (L.map(function (x) { return '<div class="gl rvi"><span>' + (x.a ? "🏢 " : "👤 ") + esc(secName(x)) + ' <span class="mute">· تمت ' + AR(x.c.dn) + ' حصة · ' + hm(x.c.dmin) + ' ساعة</span></span><b>' + AR(x.c.damt) + ' ' + cur + '</b></div>' }).join("") || '<div class="mute">لا توجد بيانات بعد.</div>') + '<div class="acts"><a class="btn p" href="#salary">💰 التفاصيل الكاملة</a><a class="btn" href="#acad">🏢 الأكاديميات</a></div></div>';
+          return h + '<div class="mute" style="font-size:12px;margin:6px 2px">🔒 الأرقام مخفية للخصوصية: اضغط على أي رقم لإظهاره أو إخفائه، وبيتخفّى تلقائيًا بعد ١٥ ثانية.</div><div class="hgrid">' + stat("💰", AR(du.tot), "مستحق لحد الآن", cur, "priv" + (PV ? " show" : ""), "pv") + stat("✅", AR(du.got), "المستلم", cur, "ok priv" + (PV ? " show" : ""), "pv") + stat("⏳", AR(rem), "متبقٍ عند الأكاديميات", cur, (rem ? "bad" : "ok") + " priv" + (PV ? " show" : ""), "pv") + '</div>'
+            + '<div class="card"><h2>🧾 حسب الجهة</h2>' + (L.map(function (x) { return '<div class="gl rvi"><span>' + (x.a ? "🏢 " : "👤 ") + esc(secName(x)) + ' <span class="mute">· تمت ' + AR(x.c.dn) + ' حصة · ' + hm(x.c.dmin) + ' ساعة</span></span><b class="pvb' + (PV ? " show" : "") + '" data-ht="pv">' + AR(x.c.damt) + ' ' + cur + '</b></div>' }).join("") || '<div class="mute">لا توجد بيانات بعد.</div>') + '<div class="acts"><a class="btn p" href="#salary">💰 التفاصيل الكاملة</a><a class="btn" href="#acad">🏢 الأكاديميات</a></div></div>';
         }
         h += '<div class="hgrid">' + stat("🕌", AR(raw.length), "حلقات اليوم", raw.length ? "سُجّل " + AR(done) + " · باقي " + AR(left) : "") + stat("👥", AR(act), "طالب نشط", AR(db.groups.length) + " حلقة إجمالًا")
-          + stat("🚫", AR(cxT), "حلقات ملغية", "هذا الشهر: " + AR(cxM), cxT ? "warn" : "") + stat("🔎", AR(pend.length), "تحتاج مراجعة", pend.length ? "اضغط للمراجعة" : "كله تمام ✓", pend.length ? "bad" : "ok", "review") + stat("💰", AR(du.tot), "مستحق لحد الآن", cur, "", "money") + '</div>';
+          + stat("🚫", AR(cxT), "حلقات ملغية", "هذا الشهر: " + AR(cxM), cxT ? "warn" : "") + stat("🔎", AR(pend.length), "تحتاج مراجعة", pend.length ? "اضغط للمراجعة" : "كله تمام ✓", pend.length ? "bad" : "ok", "review") + stat("💰", AR(du.tot), "مستحق لحد الآن", PV ? cur : "اضغط للإظهار 👁", "priv" + (PV ? " show" : ""), "pv") + '</div>';
         if (raw.length) h += '<div class="hp"><div class="pgb"><i style="width:' + pc + '%"></i></div><span class="mute">تقدّم اليوم: ' + AR(done) + ' من ' + AR(raw.length) + ' حلقة (' + AR(pc) + '٪)</span></div>';
         h += '<div class="dh">جدول اليوم<span>' + pd(t).toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" }) + ' <a class="btn" href="#groups" style="padding:2px 12px;font-size:13px;margin-inline-start:8px">كل الحلقات ‹</a></span></div>' + dayCal(t, list);
         return h
       };
-      document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-ht]"); if (!b || b.closest(".dlg")) return; HT = b.getAttribute("data-ht"); render() });
+      document.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-ht]"); if (!b || b.closest(".dlg")) return; var v = b.getAttribute("data-ht"); if (v === "pv") { PV = PV ? 0 : 1; clearTimeout(pvT); if (PV) pvT = setTimeout(function () { PV = 0; if (view === "home") render() }, 15000); render(); return } HT = v; render() });
       document.addEventListener("keydown", function (e) { var t = e.target; if ((e.key === "Enter" || e.key === " ") && t.matches && t.matches(".hs[data-ht]")) { e.preventDefault(); t.click() } });
       var st = document.createElement("style");
-      st.textContent = ".hh{background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:20px;padding:16px 18px}.hh h2{margin:0 0 2px}.hn{margin-top:8px;font-size:14px}.hn b{color:var(--acc)}.htabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;margin:10px 0 4px;position:sticky;top:0;z-index:5;background:var(--bg,transparent);scrollbar-width:none}.htabs::-webkit-scrollbar{display:none}.ht{white-space:nowrap;border:1px solid var(--line);background:var(--card);color:inherit;border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;gap:6px;align-items:center}.ht.on{background:var(--acc);color:var(--accInk,#fff);border-color:var(--acc);font-weight:700}.ht em{font-style:normal;background:var(--bad);color:#fff;border-radius:99px;padding:0 7px;font-size:12px}.hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}.hs{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:grid;gap:2px;position:relative}.hs[data-ht]{cursor:pointer}.hs[data-ht]:hover{background:var(--card2)}.hs i{font-style:normal;font-size:20px}.hs b{font-size:28px;line-height:1.15}.hs span{font-size:13px;font-weight:700}.hs small{font-size:12px;color:var(--mute)}.hs.ok b{color:var(--ok)}.hs.bad{border-color:var(--bad)}.hs.bad b{color:var(--bad)}.hs.warn b{color:var(--gold,#c9a227)}.hp{margin:4px 0 6px}.hp .pgb{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-bottom:4px}.hp .pgb i{display:block;height:100%;background:var(--acc);border-radius:99px}";
+      st.textContent = ".hh{background:linear-gradient(135deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:20px;padding:16px 18px}.hh h2{margin:0 0 2px}.hn{margin-top:8px;font-size:14px}.hn b{color:var(--acc)}.htabs{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;margin:10px 0 4px;position:sticky;top:0;z-index:5;background:var(--bg,transparent);scrollbar-width:none}.htabs::-webkit-scrollbar{display:none}.ht{white-space:nowrap;border:1px solid var(--line);background:var(--card);color:inherit;border-radius:999px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;gap:6px;align-items:center}.ht.on{background:var(--acc);color:var(--accInk,#fff);border-color:var(--acc);font-weight:700}.ht em{font-style:normal;background:var(--bad);color:#fff;border-radius:99px;padding:0 7px;font-size:12px}.hgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}.hs{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:grid;gap:2px;position:relative}.hs[data-ht]{cursor:pointer}.hs[data-ht]:hover{background:var(--card2)}.hs i{font-style:normal;font-size:20px}.hs b{font-size:28px;line-height:1.15}.hs span{font-size:13px;font-weight:700}.hs small{font-size:12px;color:var(--mute)}.hs.ok b{color:var(--ok)}.hs.bad{border-color:var(--bad)}.hs.bad b{color:var(--bad)}.hs.warn b{color:var(--gold,#c9a227)}.priv b,.pvb{filter:blur(8px);user-select:none;cursor:pointer;transition:filter .2s}.priv.show b,.pvb.show{filter:none}.pvb{display:inline-block}.hp{margin:4px 0 6px}.hp .pgb{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-bottom:4px}.hp .pgb i{display:block;height:100%;background:var(--acc);border-radius:99px}";
       document.head.appendChild(st)
+    })();
+  </script>
+  <script>
+    /* ===== مزامنة تلقائية دورية: كل ٣ دقائق + عند إخفاء التبويب + عند رجوع الاتصال ===== */
+    (function () {
+      function tick() { try { if (window.CL && CL.sync && navigator.onLine !== false) CL.sync(true) } catch (e) { } }
+      setInterval(tick, 3 * 60 * 1000);
+      document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") tick() });
+      window.addEventListener("pagehide", tick);
+      window.addEventListener("online", tick);
+    })();
+  </script>
+  <script>
+    /* ===== خصوصية الأرقام المالية في مستحقاتي والأكاديميات: مخفية لحد ما تظهرها بنفسك ===== */
+    (function () {
+      var SEL = { salary: ".tbn b,.tbs b,.tb3 b[style],.secamt b,.sr6:not(.shd)>b,.ov2:not(.shd)>b:not(:first-child),.grand .gl b", acad: ".aca b,.acsum>div:nth-child(n+3) b" };
+      function paint() {
+        var v = document.getElementById("v"); if (!v || !SEL[view]) return;
+        v.querySelectorAll(SEL[view]).forEach(function (el) { el.classList.add("pvb"); el.setAttribute("data-pvx", "1"); el.classList.toggle("show", !!PV) });
+        var bar = document.createElement("div"); bar.className = "pvbar"; bar.innerHTML = '<button class="ht" data-pvbtn="1">' + (PV ? "🙈 إخفاء الأرقام" : "👁 إظهار الأرقام") + '</button><span class="mute">🔒 الأرقام مخفية للخصوصية، وبتتخفّى تلقائيًا بعد ١٥ ثانية</span>'; v.insertBefore(bar, v.firstChild)
+      }
+      var _r = render; render = function () { _r.apply(this, arguments); paint() };
+      function tog() { PV = PV ? 0 : 1; clearTimeout(pvT); if (PV) pvT = setTimeout(function () { PV = 0; render() }, 15000); render() }
+      window.addEventListener("click", function (e) {
+        var t = e.target; if (!t.closest) return;
+        if (t.closest("[data-pvbtn]")) { e.stopImmediatePropagation(); e.preventDefault(); tog(); return }
+        if (!PV && t.closest("[data-pvx]")) { e.stopImmediatePropagation(); e.preventDefault(); tog() }
+      }, true);
+      var st = document.createElement("style");
+      st.textContent = ".pvbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-size:12px}";
+      document.head.appendChild(st)
+    })();
+  </script>
+  <script>
+    /* ===== صفحة التقارير: تقرير سريع لولي الأمر بعد كل حصة ===== */
+    (function () {
+      var RP = { days: 7, f: "new", open: {} }, SL = { p: "✓ حضر", a: "✕ غاب", e: "📝 اعتذر" },
+        MS = { p: "ما شاء الله، بارك الله فيه وزاده حرصًا وتوفيقًا 🌟", a: "افتقدناه اليوم، ونرجو الانتظام في الحصص القادمة بإذن الله.", e: "نسأل الله له التيسير، ونتفق على موعد للتعويض إن شاء الله." };
+      VIEWS.push(["reports", "📊", "التقارير", 2]); BUILT.reports = 1; NAVN.reports = "📊 التقارير"; NAVG[1][1].splice(NAVG[1][1].indexOf("salary"), 0, "reports");
+      function dl(d) { return pd(d).toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" }) }
+      function sk(k, sid) { return k + "|" + sid }
+      function sent(k, sid) { return db.repSent && db.repSent[sk(k, sid)] }
+      function mark(k, sid, on) { db.repSent = db.repSent || {}; if (on) db.repSent[sk(k, sid)] = Date.now(); else delete db.repSent[sk(k, sid)]; save() }
+      function rows() {
+        var lo = addDays(todayStr(), -(RP.days - 1)), o = [];
+        Object.keys(db.attendance).forEach(function (k) {
+          var r = db.attendance[k]; if (!r || !r.day || r.day < lo) return;
+          var g = db.groups.filter(function (q) { return q.id === r.g })[0], it = [];
+          Object.keys(r.st || {}).forEach(function (sid) { var st = stuById(sid), sn = r.sn && r.sn[sid]; it.push({ sid: sid, name: st ? st.name : (sn && sn.n) || "طالب", v: r.st[sid], phone: (st && st.phone) || "" }) });
+          if (it.length) o.push({ k: k, r: r, g: g, it: it, t: g ? gTime(g, r.day) || "" : "" })
+        });
+        return o.sort(function (a, b) { return (b.r.day + b.t).localeCompare(a.r.day + a.t) })
+      }
+      function txt(x, it) {
+        var r = x.r, nm = db.settings.name, L = ["السلام عليكم ورحمة الله وبركاته", "📖 تقرير حصة " + it.name, "📅 " + dl(r.day) + (x.t ? " — " + tmFmt(r.day, x.t) : ""), "الحالة: " + SL[it.v]];
+        if (it.v === "p") L.push("⏱ المدة: " + AR(r.dur || r.gd || (x.g && x.g.dur) || 30) + " دقيقة"); if (r.note) L.push("📝 " + r.note);
+        L.push("", MS[it.v]); if (nm) L.push("— " + nm); L.push("وفّقكم الله وبارك فيكم 🌿"); return L.join("\n")
+      }
+      function wa(t, ph) { return (normPh(ph) ? "https://wa.me/" + normPh(ph) + "?text=" : "https://api.whatsapp.com/send?text=") + encodeURIComponent(t) }
+      function find(k, sid) { var x = rows().filter(function (y) { return y.k === k })[0]; if (!x) { var r = db.attendance[k]; if (!r) return null; x = { k: k, r: r, g: db.groups.filter(function (q) { return q.id === r.g })[0], t: "", it: [] } } var it = x.it.filter(function (i) { return i.sid === sid })[0]; return it ? { x: x, it: it } : null }
+      function chip(on, a, l, n) { return '<button class="ht' + (on ? " on" : "") + '" ' + a + '>' + l + (n != null ? ' <em style="background:var(--acc)">' + AR(n) + '</em>' : "") + '</button>' }
+      reportsV = function () {
+        var R = rows(), all = 0, nw = 0; R.forEach(function (x) { x.it.forEach(function (i) { all++; if (!sent(x.k, i.sid)) nw++ }) });
+        var show = R.filter(function (x) { return x.it.some(function (i) { return RP.f === "all" || (RP.f === "new" ? !sent(x.k, i.sid) : !!sent(x.k, i.sid)) }) });
+        var h = '<div class="hero hh"><h2>📊 التقارير</h2><div class="mute">تقرير جاهز لكل طالب بعد كل حصة: راجعه وابعته لولي الأمر بضغطة.</div></div>'
+          + '<div class="htabs" style="position:static">' + [[1, "اليوم"], [7, "٧ أيام"], [30, "٣٠ يوم"]].map(function (d) { return chip(RP.days === d[0], 'data-rpd="' + d[0] + '"', d[1]) }).join("") + '<span class="grow"></span>' + chip(RP.f === "new", 'data-rpf="new"', "لم تُرسل", nw) + chip(RP.f === "sent", 'data-rpf="sent"', "أُرسلت", all - nw) + chip(RP.f === "all", 'data-rpf="all"', "الكل", all) + '</div>';
+        if (!show.length) return h + '<div class="card empty"><div style="font-size:42px">' + (all ? "✅" : "📭") + '</div><p>' + (all ? "مفيش تقارير في الفلتر ده. كل حاجة اتبعتت 👌" : "مفيش حصص مسجّلة في الفترة دي. سجّل حضور حصة وهيظهر تقريرها هنا.") + '</p></div>';
+        return h + show.map(function (x) {
+          var open = RP.open[x.k] !== undefined ? RP.open[x.k] : show.length <= 3, un = x.it.filter(function (i) { return !sent(x.k, i.sid) }).length, r = x.r;
+          return '<div class="card rpc"><div class="rph" data-rp="tg" data-k="' + x.k + '" role="button" tabindex="0"><div class="si"><b>' + (x.t ? tmFmt(r.day, x.t) + " · " : "") + esc(r.gn || (x.g ? gTitle(x.g) : "حصة")) + '</b><div class="mute">' + dl(r.day) + ' · ' + AR(x.it.length) + ' تقرير' + (un ? " · <b style='color:var(--bad)'>" + AR(un) + " لم يُرسل</b>" : " · ✓ اتبعتت كلها") + '</div></div><span class="chev">' + (open ? "▴" : "▾") + '</span></div>'
+            + (open ? x.it.filter(function (i) { return RP.f === "all" || (RP.f === "new" ? !sent(x.k, i.sid) : !!sent(x.k, i.sid)) }).map(function (i) {
+              var a = ' data-k="' + x.k + '" data-s="' + i.sid + '"', sd = sent(x.k, i.sid);
+              return '<div class="rvi"><div class="si"><b>' + esc(i.name) + '</b> <span class="bd ' + (i.v === "p" ? "ok" : "late") + '">' + SL[i.v] + '</span><div class="mute">' + (sd ? "✓ أُرسل " + new Date(sd).toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : i.phone ? "جاهز للإرسال" : "لا يوجد رقم ولي أمر — هتختار جهة الاتصال بنفسك") + '</div></div><div class="rva"><button class="p" data-rp="wa"' + a + '>📲 واتساب</button><button data-rp="cp"' + a + '>📋 نسخ</button><button data-rp="ed"' + a + '>✎ تعديل</button>' + (sd ? '<button data-rp="un"' + a + ' title="تعليم كغير مُرسل">↩</button>' : "") + '</div></div>'
+            }).join("") : "") + '</div>'
+        }).join("")
+      };
+      function dlg(x, it) {
+        var el = document.createElement("div"); el.className = "dlg"; el.innerHTML = '<div class="fm"><h2>تقرير ' + esc(it.name) + '</h2><textarea style="direction:rtl;min-height:200px"></textarea><div class="row"><button data-n>إغلاق</button><button data-d="cp">📋 نسخ</button><button class="p" data-d="wa">📲 واتساب</button></div></div>';
+        var ta = el.querySelector("textarea"); ta.value = txt(x, it);
+        el.addEventListener("click", function (e) { var t = e.target, d = t.getAttribute && t.getAttribute("data-d"); if (t === el || (t.hasAttribute && t.hasAttribute("data-n"))) { el.remove(); return } if (d === "cp") { copyTxt(ta.value); mark(x.k, it.sid, 1); el.remove(); render() } else if (d === "wa") { window.open(wa(ta.value, it.phone), "_blank") || copyTxt(ta.value); mark(x.k, it.sid, 1); el.remove(); render() } });
+        document.body.appendChild(el)
+      }
+      document.addEventListener("click", function (e) {
+        var t = e.target; if (!t.closest || t.closest(".dlg")) return;
+        var d = t.closest("[data-rpd]"); if (d) { RP.days = +d.getAttribute("data-rpd"); render(); return }
+        var f = t.closest("[data-rpf]"); if (f) { RP.f = f.getAttribute("data-rpf"); render(); return }
+        var go = t.closest("[data-rpgo]"); if (go) { var k0 = go.getAttribute("data-rpgo"); RP.f = "all"; RP.days = 30; RP.open[k0] = true; if (location.hash === "#reports") render(); else location.hash = "#reports"; return }
+        var b = t.closest("[data-rp]"); if (!b) return; var a = b.getAttribute("data-rp"), k = b.getAttribute("data-k"), sid = b.getAttribute("data-s");
+        if (a === "tg") { var x0 = rows().filter(function (y) { return y.k === k })[0]; var cur = RP.open[k] !== undefined ? RP.open[k] : rows().length <= 3; RP.open[k] = !cur; render(); return }
+        var o = find(k, sid); if (!o) return;
+        if (a === "wa") { var tx = txt(o.x, o.it); window.open(wa(tx, o.it.phone), "_blank") || copyTxt(tx); mark(k, sid, 1); render() }
+        else if (a === "cp") { copyTxt(txt(o.x, o.it)); mark(k, sid, 1); render() }
+        else if (a === "ed") dlg(o.x, o.it)
+        else if (a === "un") { mark(k, sid, 0); render() }
+      });
+      document.addEventListener("keydown", function (e) { var t = e.target; if ((e.key === "Enter" || e.key === " ") && t.matches && t.matches(".rph")) { e.preventDefault(); t.click() } });
+      var _l = lockV; lockV = function () { return view === "reports" ? reportsV() : _l() };
+      var _sc = scard; scard = function (g, day) { var h = _sc(g, day), k = akey(g, day); return db.attendance[k] ? h.replace('<div class="rvu">', '<div class="rvu"><button data-rpgo="' + k + '">📊 جهّز تقارير الطلاب</button> ') : h };
+      var st = document.createElement("style"); st.textContent = ".rpc{padding:0!important;overflow:hidden}.rph{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:linear-gradient(135deg,var(--card2),var(--card))}.rpc .rvi{padding:10px 14px}"; document.head.appendChild(st);
+      nav(); if (view === "reports") render()
+    })();
+  </script>
+  <script>
+    /* ===== التقارير: تقرير الطالب لولي الأمر + كشف الأكاديمية (PDF/صورة) + تقريري الشهري ===== */
+    (function () {
+      var T = { tab: "quick", sid: "", per: "m", edit: null, aid: "", ym: todayStr().slice(0, 7) }, _q = reportsV;
+      function shift(ym, d) { var p = ym.split("-"), x = new Date(+p[0], +p[1] - 1 + d, 1); return x.getFullYear() + "-" + ("0" + (x.getMonth() + 1)).slice(-2) }
+      function dl(d) { return pd(d).toLocaleDateString("ar-EG", { day: "numeric", month: "long" }) }
+      function recs(lo, hi) { return Object.keys(db.attendance).map(function (k) { return db.attendance[k] }).filter(function (r) { return r && r.day && r.day >= lo && r.day <= hi }) }
+      function range(per) { var t = todayStr(), ym = t.slice(0, 7); if (per === "w") return [addDays(t, -6), t, "آخر ٧ أيام"]; if (per === "pm") { var q = shift(ym, -1); return [q + "-01", q + "-31", mLbl(q)] } return [ym + "-01", ym + "-31", mLbl(ym)] }
+      function chip(on, a, l) { return '<button class="ht' + (on ? " on" : "") + '" ' + a + '>' + l + '</button>' }
+      function nav3() { return '<div class="htabs" style="position:static">' + chip(T.ym === todayStr().slice(0, 7), 'data-r3="ymn" data-v="0"', "هذا الشهر") + chip(0, 'data-r3="ymn" data-v="-1"', "❯ السابق") + chip(0, 'data-r3="ymn" data-v="1"', "التالي ❮") + '<b style="align-self:center">' + mLbl(T.ym) + '</b></div>' }
+      /* --- 1) تقرير الطالب --- */
+      function stuTxt(st) {
+        var R = range(T.per), c = { p: 0, a: 0, e: 0 }, nt = []; recs(R[0], R[1]).sort(function (a, b) { return a.day.localeCompare(b.day) }).forEach(function (r) { var v = r.st && r.st[st.id]; if (!v) return; c[v]++; if (r.note && nt.length < 6) nt.push("• " + dl(r.day) + ": " + r.note) });
+        var tot = c.p + c.a + c.e, pc = tot ? Math.round(c.p * 100 / tot) : 0, mk = db.marks[st.id] || {}, per = {}; Object.keys(mk).forEach(function (k) { var n = k.split(":")[0]; per[n] = (per[n] || 0) + 1 });
+        var top = Object.keys(per).sort(function (a, b) { return per[b] - per[a] }).slice(0, 2).map(function (n) { return "سورة " + SN[n - 1] }), nm = db.settings.name;
+        var L = ["السلام عليكم ورحمة الله وبركاته", "📖 تقرير " + st.name + " — " + R[2], "", "✓ حضر: " + AR(c.p) + " حصة", "✕ غاب: " + AR(c.a), "📝 اعتذر: " + AR(c.e), "📊 نسبة الالتزام: " + AR(pc) + "٪"];
+        if (nt.length) L.push("", "📝 ملاحظات الحصص:"), L.push.apply(L, nt); if (Object.keys(mk).length) L.push("", "📖 المصحف: " + AR(Object.keys(mk).length) + " كلمة معلَّمة للمراجعة" + (top.length ? "، أكثرها في " + top.join(" و") : ""));
+        var ft = !tot ? "لا توجد حصص مسجّلة في هذه الفترة." : pc >= 90 ? "ما شاء الله، التزام ممتاز بارك الله فيه وزاده حرصًا 🌟" : pc >= 70 ? "أحسن الله إليه، التزام جيد ونتمنى المزيد من الانتظام 🌿" : "نرجو الانتظام في الحصص القادمة، فهو أهم أسباب التقدّم بإذن الله."; L.push("", ft); if (nm) L.push("— " + nm); L.push("وفّقكم الله وبارك فيكم 🌿"); var mkn = Object.keys(mk).length, V = { "الاسم": st.name, "الفترة": R[2], "حضر": AR(c.p), "غاب": AR(c.a), "اعتذر": AR(c.e), "الالتزام": AR(pc), "الملاحظات": nt.length ? "📝 ملاحظات الحصص:\n" + nt.join("\n") : "", "المصحف": mkn ? "📖 المصحف: " + AR(mkn) + " كلمة معلَّمة للمراجعة" + (top.length ? "، أكثرها في " + top.join(" و") : "") : "", "الختام": ft, "المعلم": nm || "" }; return window.rptApply ? rptApply(L.join("\n"), V) : L.join("\n")
+      }
+      function stuP() {
+        var ss = sortedStu(db.students); if (!ss.length) return '<div class="card empty"><p>أضف طلابًا أولًا.</p></div>'; var st = stuById(T.sid) || ss[0]; T.sid = st.id; var t = T.edit != null ? T.edit : stuTxt(st);
+        return '<div class="card"><div class="row"><select id="r3s" style="flex:1;min-width:150px">' + ss.map(function (x) { return '<option value="' + x.id + '"' + (x.id === st.id ? " selected" : "") + ">" + esc(x.name) + "</option>" }).join("") + '</select>' + chip(T.per === "w", 'data-r3="per" data-v="w"', "أسبوعي") + chip(T.per === "m", 'data-r3="per" data-v="m"', "هذا الشهر") + chip(T.per === "pm", 'data-r3="per" data-v="pm"', "الشهر السابق") + '</div><textarea id="r3t" style="direction:rtl;min-height:300px;width:100%;margin-top:10px">' + esc(t) + '</textarea><div class="mute" style="font-size:12px">تقدر تعدّل النص قبل الإرسال.' + (st.phone ? "" : " ⚠️ مفيش رقم ولي أمر للطالب ده، هتختار جهة الاتصال بنفسك.") + '</div><div class="acts"><button class="p" data-r3="swa">📲 واتساب لولي الأمر</button><button data-r3="scp">📋 نسخ</button><button data-r4="img">🖼 صورة بالقالب</button></div></div>'
+      }
+      /* --- 2) كشف الأكاديمية --- */
+      function acadP() {
+        var L = salList(T.ym).filter(function (x) { return x.a }); if (!L.length) return '<div class="card empty"><p>لا توجد أكاديميات. أضف أكاديمية من صفحة الأكاديميات.</p></div>';
+        var x = L.filter(function (y) { return y.aid === T.aid })[0] || L[0]; T.aid = x.aid; var c = x.c, cur = esc(db.settings.currency || "جنيه"), rs = x.o.rows;
+        var td = 'style="padding:8px 6px;border-bottom:1px solid #e3e3e3;text-align:center"', th = 'style="padding:8px 6px;background:#0A6B54;color:#fff;font-size:13px"';
+        return nav3() + '<div class="card"><select id="r3a" style="width:100%">' + L.map(function (y) { return '<option value="' + y.aid + '"' + (y.aid === x.aid ? " selected" : "") + ">" + esc(y.a.name) + "</option>" }).join("") + '</select><div class="acts"><button class="p" data-r3="pdf">🖨 طباعة / حفظ PDF</button><button data-r3="img">🖼 حفظ كصورة</button><button data-r3="atx">📋 نسخ كنص</button></div></div>'
+          + '<div class="rpdoc" id="rpdoc"><div style="border-bottom:3px solid #0A6B54;padding-bottom:10px;margin-bottom:12px"><div style="font-size:12px;color:#0A6B54;font-weight:700">🌙 نور القرآن · كشف حساب</div><div style="font-size:22px;font-weight:800">🏢 ' + esc(x.a.name) + '</div><div style="color:#555;font-size:14px">' + mLbl(T.ym) + (db.settings.name ? " · المعلم: " + esc(db.settings.name) : "") + '</div></div>'
+          + '<table style="width:100%;border-collapse:collapse;font-size:14px"><tr><th ' + th + ' style="background:#0A6B54;color:#fff;padding:8px 6px;text-align:start">الطالب</th><th ' + th + '>المحاسبة</th><th ' + th + '>حصص تمت</th><th ' + th + '>ساعات</th><th ' + th + '>المستحق</th></tr>'
+          + (rs.map(function (r) { var rt = r.rt != null ? r.rt : stuRate(r.st, x.a); return '<tr><td style="padding:8px 6px;border-bottom:1px solid #e3e3e3;font-weight:700">' + esc(r.st.name) + '</td><td ' + td + '>' + MODE[r.md] + (rt ? " · " + AR(rt) : "") + '</td><td ' + td + '>' + AR(r.dn) + ' / ' + AR(r.n) + '</td><td ' + td + '>' + hm(r.dmin) + '</td><td ' + td + '><b>' + AR(Math.round(r.damt)) + '</b></td></tr>' }).join("") || '<tr><td colspan="5" style="padding:14px;text-align:center;color:#777">لا توجد حصص هذا الشهر</td></tr>')
+          + '<tr style="background:#f1f7f4;font-weight:800"><td style="padding:10px 6px">الإجمالي</td><td></td><td ' + td + '>' + AR(c.dn) + ' / ' + AR(c.n) + '</td><td ' + td + '>' + hm(c.dmin) + '</td><td ' + td + '>' + AR(c.damt) + ' ' + cur + '</td></tr></table>'
+          + '<div style="margin-top:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px"><span>إجمالي مستحق الشهر: <b>' + AR(c.amt) + ' ' + cur + '</b></span><span>' + (x.pm ? "✅ المستلم: <b>" + AR(x.pm.amt) + " " + cur + "</b>" : "⬜ لم يُستلم بعد") + '</span></div><div style="margin-top:14px;color:#777;font-size:12px;text-align:center">وفّقكم الله 🌿</div></div>'
+      }
+      /* --- 3) تقريري الشهري --- */
+      function mstat(ym) {
+        var lo = ym + "-01", hi = ym + "-31", o = { n: 0, min: 0, a: 0, e: 0, p: 0, days: {}, cx: 0 };
+        recs(lo, hi).forEach(function (r) { var any = 0; Object.keys(r.st || {}).forEach(function (k) { var v = r.st[k]; o[v]++; if (v === "p") any = 1 }); if (any) { o.n++; o.min += r.dur || r.gd || 30; o.days[r.day] = 1 } });
+        db.groups.forEach(function (g) { var ex = g.ex || {}; Object.keys(ex).forEach(function (k) { if (ex[k] && ex[k].c && k.slice(0, 7) === ym && baseOcc(g, k) && !idle(g, k)) o.cx++ }) }); o.d = Object.keys(o.days).length; return o
+      }
+      function dlt(a, b, inv) { var d = a - b; if (!b && !a) return "—"; if (!d) return "= مثل الشهر الماضي"; return (d > 0 ? "▲ " : "▼ ") + AR(Math.abs(d)) + " عن الشهر الماضي" }
+      function cd(ic, v, l, sub, cl) { return '<div class="hs ' + (cl || "") + '"><i>' + ic + '</i><b>' + v + '</b><span>' + l + '</span><small>' + sub + '</small></div>' }
+      function monP() {
+        var a = mstat(T.ym), b = mstat(shift(T.ym, -1)), avg = a.n ? Math.round(a.min / a.n) : 0, avgP = b.n ? Math.round(b.min / b.n) : 0, ab = a.a + a.e, abP = b.a + b.e;
+        return nav3() + '<div class="hgrid">' + cd("🕌", AR(a.n), "حصص تمت (مسجّلة)", dlt(a.n, b.n)) + cd("⏱", hm(a.min), "ساعات التدريس", dlt(Math.round(a.min / 60), Math.round(b.min / 60))) + cd("📅", AR(a.d), "أيام عمل", dlt(a.d, b.d)) + cd("⌛", AR(avg) + " د", "متوسط مدة الحصة", avgP ? dlt(avg, avgP) : "—")
+          + cd("🚫", AR(a.cx), "حلقات ملغية", dlt(a.cx, b.cx), a.cx ? "warn" : "") + cd("✕", AR(a.a), "غياب طلاب", dlt(a.a, b.a), a.a ? "bad" : "ok") + cd("📝", AR(a.e), "اعتذار طلاب", dlt(a.e, b.e)) + cd("📊", AR(a.p + ab ? Math.round(a.p * 100 / (a.p + ab)) : 0) + "٪", "نسبة التزام الطلاب", b.p + abP ? "الشهر الماضي " + AR(Math.round(b.p * 100 / (b.p + abP))) + "٪" : "—", "ok") + '</div><div class="mute" style="font-size:12px">الأرقام من سجل الحضور المسجّل فقط. الحصص غير المسجّلة لا تُحسب هنا.</div>'
+      }
+      window.rptStuTxt = stuTxt; window.rptT = T;
+      /* --- الربط --- */
+      reportsV = function () {
+        var tabs = [["quick", "⚡ بعد الحصة"], ["stu", "👨‍👩‍👦 تقرير الطالب"], ["acad", "🏢 كشف الأكاديمية"], ["mon", "📈 تقريري الشهري"], ["tpl", "🎨 القالب"]];
+        var h = '<div class="htabs" style="position:static">' + tabs.map(function (t) { return chip(T.tab === t[0], 'data-r3="tab" data-v="' + t[0] + '"', t[1]) }).join("") + '</div>';
+        return h + (T.tab === "tpl" && window.rptTpl ? rptTpl() : T.tab === "stu" ? '<div class="hero hh"><h2>👨‍👩‍👦 تقرير الطالب</h2><div class="mute">حضور وغياب والتزام وملاحظات ومصحف، جاهز لولي الأمر.</div></div>' + stuP() : T.tab === "acad" ? '<div class="hero hh"><h2>🏢 كشف حساب الأكاديمية</h2></div>' + acadP() : T.tab === "mon" ? '<div class="hero hh"><h2>📈 تقريري الشهري</h2><div class="mute">ملخصك مع مقارنة بالشهر السابق.</div></div>' + monP() : _q())
+      };
+      function h2c(cb) { if (window.html2canvas) return cb(); var sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; sc.onload = cb; sc.onerror = function () { toast("تعذّر تحميل أداة الصورة، جرّب الطباعة PDF") }; document.head.appendChild(sc) }
+      function toImg() {
+        var el = document.getElementById("rpdoc"); if (!el) return; toast("جاري تجهيز الصورة…");
+        h2c(function () { html2canvas(el, { scale: 2, backgroundColor: "#ffffff" }).then(function (cv) { cv.toBlob(function (bl) { var f = new File([bl], "كشف-حساب-" + T.ym + ".png", { type: "image/png" }); if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f] }).catch(function () { }); else { var a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); toast("تم تنزيل الصورة ✓") } }) }) })
+      }
+      function toPdf() { var el = document.getElementById("rpdoc"); if (!el) return; var d = document.createElement("div"); d.id = "rpPrint"; d.innerHTML = el.outerHTML; document.body.appendChild(d); document.body.classList.add("rpp"); try { window.print() } catch (e) { toast("الطباعة غير متاحة هنا، استخدم «حفظ كصورة»") } setTimeout(function () { d.remove(); document.body.classList.remove("rpp") }, 800) }
+      document.addEventListener("input", function (e) { if (e.target.id === "r3t") T.edit = e.target.value });
+      document.addEventListener("change", function (e) { if (e.target.id === "r3s") { T.sid = e.target.value; T.edit = null; render() } else if (e.target.id === "r3a") { T.aid = e.target.value; render() } });
+      document.addEventListener("click", function (e) {
+        var b = e.target.closest && e.target.closest("[data-r3]"); if (!b || b.closest(".dlg")) return; var a = b.getAttribute("data-r3"), v = b.getAttribute("data-v");
+        if (a === "tab") { T.tab = v; render() } else if (a === "per") { T.per = v; T.edit = null; render() } else if (a === "ymn") { T.ym = v === "0" ? todayStr().slice(0, 7) : shift(T.ym, +v); render() }
+        else if (a === "swa" || a === "scp") { var st = stuById(T.sid), t = T.edit != null ? T.edit : stuTxt(st); if (a === "scp") copyTxt(t); else window.open((normPh(st.phone) ? "https://wa.me/" + normPh(st.phone) + "?text=" : "https://api.whatsapp.com/send?text=") + encodeURIComponent(t), "_blank") || copyTxt(t) }
+        else if (a === "atx") { var ac = acadById(T.aid); if (ac) copyTxt(stmtText(ac, T.ym)) } else if (a === "img") toImg(); else if (a === "pdf") toPdf()
+      });
+      var st = document.createElement("style"); st.textContent = ".rpdoc{background:#fff;color:#111;border:1px solid var(--line);border-radius:14px;padding:18px;margin:10px 0;direction:rtl}#rpPrint{display:none}@media print{body.rpp>*:not(#rpPrint){display:none!important}body.rpp #rpPrint{display:block!important;padding:0}.rpdoc{border:0}}"; document.head.appendChild(st)
+    })();
+  </script>
+  <script>
+    /* ===== قالب التقرير: ارفع تصميمك والنص يتكتب جواه + تعديل نص القالب ===== */
+    (function () {
+      var DEF = { tpl: "", img: "", top: 20, bot: 10, l: 10, r: 10, sz: 3.8, col: "#1a1a1a", al: "r", ov: 1 },
+        DT = "السلام عليكم ورحمة الله وبركاته\n📖 تقرير {الاسم} — {الفترة}\n\n✓ حضر: {حضر} حصة\n✕ غاب: {غاب}\n📝 اعتذر: {اعتذر}\n📊 نسبة الالتزام: {الالتزام}٪\n\n{الملاحظات}\n\n{المصحف}\n\n{الختام}\n— {المعلم}\nوفّقكم الله وبارك فيكم 🌿",
+        PH = ["الاسم", "الفترة", "حضر", "غاب", "اعتذر", "الالتزام", "الملاحظات", "المصحف", "الختام", "المعلم"];
+      function C() { var o = db.settings.rpt = db.settings.rpt || {}; for (var k in DEF) if (o[k] === undefined) o[k] = DEF[k]; return o }
+      window.rptApply = function (def, V) { var c = C(); if (!c.tpl) return def; return c.tpl.replace(/\{([^}]+)\}/g, function (m, k) { return V[k.trim()] != null ? V[k.trim()] : m }).replace(/^— *$/gm, "").replace(/\n{3,}/g, "\n\n").trim() };
+      function wrap(ctx, text, mw) { var out = []; text.split("\n").forEach(function (p) { if (!p.trim()) { out.push(""); return } var cur = ""; p.split(" ").forEach(function (w) { var t = cur ? cur + " " + w : w; if (cur && ctx.measureText(t).width > mw) { out.push(cur); cur = w } else cur = t }); out.push(cur) }); return out }
+      function paint(text, target, done) {
+        var c = C(), im = new Image();
+        function go(W, H) {
+          var cv = target || document.createElement("canvas"); cv.width = W; cv.height = H; var x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
+          if (c.img) x.drawImage(im, 0, 0, W, H); else { x.fillStyle = "#0A6B54"; x.fillRect(0, 0, W, H * .13); x.fillStyle = "#fff"; x.font = "bold " + W * .045 + "px Tahoma,Arial,sans-serif"; x.direction = "rtl"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🌙 نور القرآن · تقرير الطالب", W / 2, H * .065) }
+          var x0 = W * c.l / 100, x1 = W - W * c.r / 100, y0 = H * c.top / 100, y1 = H - H * c.bot / 100, pd = W * .025;
+          if (c.ov) { x.fillStyle = "rgba(255,255,255,.86)"; x.fillRect(x0 - pd, y0 - pd, x1 - x0 + 2 * pd, y1 - y0 + 2 * pd) }
+          x.fillStyle = c.col; x.direction = "rtl"; x.textBaseline = "top"; x.textAlign = c.al === "c" ? "center" : "right";
+          var fs = W * c.sz / 100, L; for (; fs >= 12; fs -= 1) { x.font = fs + "px Tahoma,Arial,sans-serif"; L = wrap(x, text, x1 - x0); if (L.length * fs * 1.55 <= y1 - y0) break }
+          var tx = c.al === "c" ? (x0 + x1) / 2 : x1; L.forEach(function (l, i) { x.fillText(l, tx, y0 + i * fs * 1.55) }); done && done(cv)
+        }
+        if (c.img) { im.onload = function () { go(im.width, im.height) }; im.src = c.img } else go(1080, 1350)
+      }
+      function out(cv) { cv.toBlob(function (bl) { var f = new File([bl], "تقرير.png", { type: "image/png" }); if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f] }).catch(function () { }); else { var a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); toast("تم تنزيل الصورة ✓") } }) }
+      function sample() { var st = stuById(rptT.sid) || sortedStu(db.students)[0]; return st ? rptStuTxt(st) : DT.replace(/\{([^}]+)\}/g, "…") }
+      function sl(l, k, mn, mx, st) { return '<label class="r4l">' + l + ' <input type="range" data-tp="' + k + '" min="' + mn + '" max="' + mx + '" step="' + (st || 1) + '" value="' + C()[k] + '"></label>' }
+      window.rptTpl = function () {
+        var c = C(); setTimeout(function () { var cv = document.getElementById("r4p"); if (cv) paint(sample(), cv) }, 0);
+        return '<div class="hero hh"><h2>🎨 قالب التقرير</h2><div class="mute">ارفع تصميمك كخلفية، وحدّد مكان النص جواه، وعدّل صيغة الرسالة. بيتطبّق على تقرير الطالب (نص الواتساب وصورة التقرير).</div></div>'
+          + '<div class="card"><h3>🖼 صورة التصميم</h3><div class="mute" style="font-size:12px">أي صورة PNG أو JPG (يفضّل مقاس ١٠٨٠×١٣٥٠). اترك مساحة فاضية للنص.</div><div class="acts"><label class="btn p" style="cursor:pointer">⬆ ' + (c.img ? "تغيير الصورة" : "رفع صورة") + '<input type="file" id="r4f" accept="image/*" hidden></label>' + (c.img ? '<button class="dng" data-r4="rmimg">🗑 حذف الصورة</button>' : "") + '</div></div>'
+          + '<div class="card"><h3>📐 مكان النص وشكله</h3><div class="r4g">' + sl("المسافة من الأعلى", "top", 0, 70) + sl("المسافة من الأسفل", "bot", 0, 50) + sl("من اليمين", "r", 0, 40) + sl("من اليسار", "l", 0, 40) + sl("حجم الخط", "sz", 2, 6, .1) + '</div><div class="row" style="margin-top:8px"><label>لون النص <input type="color" data-tp="col" value="' + c.col + '"></label><select data-tp="al"><option value="r"' + (c.al === "r" ? " selected" : "") + '>محاذاة يمين</option><option value="c"' + (c.al === "c" ? " selected" : "") + '>توسيط</option></select><label><input type="checkbox" data-tp="ov"' + (c.ov ? " checked" : "") + '> خلفية بيضاء شفافة خلف النص</label></div></div>'
+          + '<div class="card"><h3>✍ نص القالب</h3><div class="mute" style="font-size:12px">اضغط على أي متغيّر لإضافته مكان المؤشر:</div><div class="r4c">' + PH.map(function (k) { return '<button data-r4="ins" data-v="{' + k + '}">{' + k + '}</button>' }).join("") + '</div><textarea data-tp="tpl" id="r4t" style="direction:rtl;min-height:240px;width:100%">' + esc(c.tpl || DT) + '</textarea><div class="acts"><button data-r4="rst">↺ استرجاع النص الافتراضي</button><button class="p" data-r4="img">🖼 حفظ المعاينة كصورة</button></div></div>'
+          + '<div class="card"><h3>👁 معاينة</h3><canvas id="r4p" style="width:100%;border-radius:12px;border:1px solid var(--line)"></canvas></div>'
+      };
+      function prev() { var cv = document.getElementById("r4p"); if (cv) paint(sample(), cv) }
+      function setv(e) { var k = e.target.getAttribute && e.target.getAttribute("data-tp"); if (!k) return false; var c = C(), t = e.target; c[k] = t.type === "checkbox" ? (t.checked ? 1 : 0) : t.type === "range" ? +t.value : t.value; return k }
+      document.addEventListener("input", function (e) { if (setv(e)) prev() });
+      document.addEventListener("change", function (e) {
+        if (e.target.id === "r4f") { var f = e.target.files[0]; if (!f) return; var fr = new FileReader(); fr.onload = function () { var im = new Image(); im.onload = function () { var W = Math.min(1080, im.width), H = Math.round(im.height * W / im.width), cv = document.createElement("canvas"); cv.width = W; cv.height = H; var x = cv.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, W, H); x.drawImage(im, 0, 0, W, H); C().img = cv.toDataURL("image/jpeg", .85); save(); toast("تم رفع التصميم ✓"); render() }; im.src = fr.result }; fr.readAsDataURL(f); return }
+        if (setv(e)) { save(); prev() }
+      });
+      document.addEventListener("click", function (e) {
+        var b = e.target.closest && e.target.closest("[data-r4]"); if (!b || b.closest(".dlg")) return; var a = b.getAttribute("data-r4"), c = C();
+        if (a === "rmimg") { c.img = ""; save(); render() }
+        else if (a === "rst") { c.tpl = ""; save(); render() }
+        else if (a === "ins") { var t = document.getElementById("r4t"); if (!t) return; var v = b.getAttribute("data-v"), p = t.selectionStart || t.value.length; t.value = t.value.slice(0, p) + v + t.value.slice(t.selectionEnd || p); c.tpl = t.value; save(); t.focus(); t.selectionStart = t.selectionEnd = p + v.length; prev() }
+        else if (a === "img") { var ta = document.getElementById("r3t"); paint(ta ? ta.value : sample(), null, out) }
+      });
+      var st = document.createElement("style"); st.textContent = ".r4g{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.r4l{display:grid;gap:4px;font-size:13px}.r4l input{width:100%}.r4c{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.r4c button{font-size:13px;padding:4px 10px;border-radius:999px}"; document.head.appendChild(st)
+    })();
+  </script>
+  <style id="dz-css">
+    /* ===== التقرير المصمّم (الفيز ١+٢): قالب «زمردي» ===== */
+    .dz-page {
+      position: relative;
+      box-sizing: border-box;
+      width: 794px;
+      min-height: 1040px;
+      margin: 0;
+      background: radial-gradient(circle at 78% 6%, #FFFDF6, #FBF7EA 55%, #F5EDD4);
+      border: 2.5px solid #C8A55A;
+      border-radius: 26px;
+      overflow: hidden;
+      color: #1D2B27;
+      font-family: Cairo, Tahoma, sans-serif;
+      direction: rtl;
+      line-height: 1.55;
+      text-align: right;
+      font-size: 16px
+    }
+
+    .dz-page * {
+      box-sizing: border-box
+    }
+
+    .dz-fr {
+      position: absolute;
+      top: 7px;
+      right: 7px;
+      bottom: 7px;
+      left: 7px;
+      border: 1px solid rgba(200, 165, 90, .5);
+      border-radius: 20px;
+      pointer-events: none
+    }
+
+    .dz-corner {
+      position: absolute;
+      top: 0;
+      left: 0
+    }
+
+    .dz-sky {
+      position: absolute;
+      bottom: 0;
+      left: 0
+    }
+
+    .dz-in {
+      position: relative;
+      padding: 24px 38px 84px
+    }
+
+    .dz-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .dz-bt {
+      display: flex;
+      flex-direction: column
+    }
+
+    .dz-bt b {
+      font-size: 27px;
+      font-weight: 800;
+      color: #0B4D3A;
+      line-height: 1.3
+    }
+
+    .dz-bt span {
+      font-size: 15px;
+      font-weight: 500;
+      color: #44564F
+    }
+
+    .dz-logo {
+      height: 54px;
+      width: auto;
+      max-width: 90px;
+      object-fit: contain
+    }
+
+    .dz-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      margin-top: 6px
+    }
+
+    .dz-infocol {
+      flex: 1;
+      min-width: 0;
+      padding-top: 14px
+    }
+
+    .dz-arch {
+      flex: 0 0 214px;
+      margin-top: 8px
+    }
+
+    .dz-rib {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      width: max-content;
+      max-width: 100%;
+      background: linear-gradient(90deg, #083A2D, #0C6049 50%, #083A2D);
+      color: #fff;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.4;
+      padding: 8px 38px;
+      border-radius: 18px;
+      box-shadow: 0 0 0 3px #FBF7EA, 0 0 0 4.6px #C8A55A;
+      margin: 2px 6px 16px
+    }
+
+    .dz-ir {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 17px;
+      margin: 11px 4px
+    }
+
+    .dz-ii {
+      flex: 0 0 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #E5F0E8
+    }
+
+    .dz-il {
+      color: #51635C;
+      font-weight: 500
+    }
+
+    .dz-iv {
+      font-weight: 800;
+      color: #12281F
+    }
+
+    .dz-sec {
+      position: relative;
+      margin-top: 27px;
+      break-inside: avoid;
+      page-break-inside: avoid
+    }
+
+    .dz-h {
+      position: absolute;
+      top: -17px;
+      right: 16px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(90deg, #083A2D, #0C6049);
+      color: #fff;
+      padding: 5px 18px;
+      border-radius: 13px;
+      box-shadow: 0 0 0 2px #FBF7EA, 0 0 0 3.2px #C8A55A;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.5
+    }
+
+    .dz-box {
+      background: #fff;
+      border: 1.5px solid #E4DABB;
+      border-radius: 18px;
+      padding: 28px 20px 12px
+    }
+
+    .dz-att {
+      display: flex;
+      align-items: center;
+      gap: 16px
+    }
+
+    .dz-sts {
+      flex: 1;
+      display: flex;
+      gap: 10px
+    }
+
+    .dz-st {
+      flex: 1;
+      text-align: center;
+      border: 1.5px solid;
+      border-radius: 14px;
+      padding: 9px 4px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px
+    }
+
+    .dz-st b {
+      font-size: 14.5px;
+      font-weight: 700;
+      margin-top: 3px
+    }
+
+    .dz-st strong {
+      font-size: 27px;
+      font-weight: 800;
+      line-height: 1.25
+    }
+
+    .dz-gauge {
+      position: relative;
+      flex: 0 0 128px;
+      height: 128px
+    }
+
+    .dz-dn {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center
+    }
+
+    .dz-dn b {
+      font-size: 27px;
+      font-weight: 800;
+      line-height: 1.1;
+      color: #12281F
+    }
+
+    .dz-dn small {
+      font-size: 12px;
+      color: #51635C
+    }
+
+    .dz-tot {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: #12281F
+    }
+
+    .dz-cols {
+      display: flex;
+      gap: 18px;
+      align-items: stretch
+    }
+
+    .dz-cols>.dz-sec {
+      flex: 1;
+      min-width: 0
+    }
+
+    .dz-cols .dz-box {
+      height: 100%
+    }
+
+    .dz-pr {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 0;
+      font-size: 15.5px
+    }
+
+    .dz-pi {
+      flex: 0 0 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: #E5F0E8;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .dz-pl {
+      color: #51635C;
+      white-space: nowrap
+    }
+
+    .dz-pv {
+      font-weight: 700;
+      min-width: 0;
+      overflow-wrap: anywhere
+    }
+
+    .dz-ev {
+      background: #F6E8BE;
+      border: 1px solid #D6B96F;
+      border-radius: 999px;
+      padding: 0 14px;
+      color: #6B4A0B
+    }
+
+    .dz-ul {
+      margin: 0;
+      padding: 0;
+      list-style: none
+    }
+
+    .dz-ul li {
+      position: relative;
+      padding: 3px 18px 3px 0;
+      font-size: 15px;
+      line-height: 1.8;
+      overflow-wrap: anywhere
+    }
+
+    .dz-ul li:before {
+      content: "";
+      position: absolute;
+      right: 2px;
+      top: 15px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #0B5A44
+    }
+
+    .dz-hw .dz-box {
+      border: 2px dashed #CDAE63;
+      background: #FFFAE9
+    }
+
+    .dz-msg {
+      margin-top: 24px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border: 2px solid #D6B96F;
+      border-radius: 44px;
+      background: linear-gradient(180deg, #FFF9E7, #F8EDCB);
+      padding: 14px 30px;
+      box-shadow: inset 0 0 0 4px #FFFBEF, inset 0 0 0 5px rgba(200, 165, 90, .5);
+      break-inside: avoid;
+      page-break-inside: avoid
+    }
+
+    .dz-msg p {
+      flex: 1;
+      margin: 0;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: #12402F;
+      line-height: 1.75
+    }
+
+    .dz-ft {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 12.5px;
+      color: #7A8A83
+    }
+
+    .dz-empty {
+      margin-top: 30px;
+      text-align: center;
+      color: #51635C;
+      font-size: 17px;
+      padding: 26px;
+      border: 1.5px dashed #D6C89A;
+      border-radius: 18px
+    }
+
+    /* واجهة الموقع */
+    .dzl {
+      display: grid;
+      gap: 4px;
+      font-size: 13px
+    }
+
+    .dzg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 8px
+    }
+
+    .dzd summary {
+      cursor: pointer;
+      font-weight: 700;
+      padding: 2px 0
+    }
+
+    .dz-stage {
+      position: relative;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: #E6E0CC;
+      margin-top: 10px
+    }
+
+    .dz-sc {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 794px
+    }
+
+    .dz-note {
+      font-size: 12px;
+      color: var(--mute);
+      margin-top: 6px
+    }
+
+    #rpPrint .dz-page {
+      margin: 0
+    }
+
+    @media print {
+      body.rpp #rpPrint .dz-page {
+        width: 210mm;
+        min-height: 296mm;
+        border-radius: 0;
+        border-width: 0
+      }
+
+      body.rpp #rpPrint,
+      body.rpp #rpPrint * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact
+      }
+    }
+  </style>
+  <script>
+    /* ===== التقرير المصمّم: طبقة البيانات + قالب «زمردي» + تصدير PDF/PNG (يُبنى فوق نظام التقارير الحالي) ===== */
+    (function () {
+      var T = window.rptT; if (!T || typeof reportsV !== "function" || typeof db === "undefined") return;
+      var GRN = "#0B5A44", UID = 0, DZ = { per: "w", day: todayStr(), tpl: "emerald" };
+      var PER = { d: "اليومي", w: "الأسبوعي", m: "الشهري" }, EVS = ["ممتاز", "جيد جدًا", "جيد", "مقبول", "يحتاج إلى متابعة"];
+
+      /* ---------- مدخلات يدوية: داخل db.settings عشان تتحفظ وتتزامن مع Firebase والنسخ الاحتياطي ---------- */
+      function S() { return db.settings }
+      function N() { return S().rptNotes = S().rptNotes || {} }
+      function nk() { return T.sid + "|" + DZ.per + ":" + (DZ.per === "m" ? T.ym : DZ.day) }
+      function ent() { return N()[nk()] || {} }
+      function put(f, v) { var a = N(), k = nk(), e = a[k] = a[k] || {}; if (v == null || v === "") delete e[f]; else e[f] = v; if (!Object.keys(e).length) delete a[k]; save() }
+      function ident() { var s = S(); return { name: s.rptAcademy || "نور القرآن", tag: s.rptTag != null ? s.rptTag : "لتعليم القرآن الكريم", logo: s.rptLogo || "" } }
+      function fd(d, o) { return pd(d).toLocaleDateString("ar-EG", o) }
+      function lines(t) { return String(t || "").split(/\n+/).map(function (x) { return x.trim() }).filter(Boolean) }
+      function fm(m) { m = Math.round(m || 0); var h = Math.floor(m / 60), r = m % 60; return (h ? AR(h) + " ساعة" : "") + (h && r ? " و" : "") + (r ? AR(r) + " دقيقة" : "") || AR(0) }
+      function range() {
+        if (DZ.per === "m") return { lo: T.ym + "-01", hi: T.ym + "-31", label: mLbl(T.ym) };
+        var hi = DZ.day; if (DZ.per === "d") return { lo: hi, hi: hi, label: fd(hi, { weekday: "long", day: "numeric", month: "long", year: "numeric" }) };
+        var lo = addDays(hi, -6); return { lo: lo, hi: hi, label: "من " + fd(lo, { day: "numeric", month: "long" }) + " إلى " + fd(hi, { day: "numeric", month: "long", year: "numeric" }) }
+      }
+      function autoMsg(st, tot, pct) {
+        if (!tot) return ""; var f = (st.name || "").trim().split(/\s+/)[0];
+        return pct >= 90 ? "استمر يا " + f + " على هذا الاجتهاد،\nفأنت على طريق حفظ كتاب الله بإذن الله."
+          : pct >= 70 ? "أحسنت يا " + f + "، التزام جيد ونتمنى المزيد من الانتظام،\nوفّقك الله وزادك حرصًا."
+            : "نفتقدك يا " + f + "، ونرجو الانتظام في الحصص القادمة،\nفهو أهم أسباب التقدّم بإذن الله."
+      }
+
+      /* ---------- بناء كائن التقرير من بيانات الموقع الحالية ---------- */
+      function build() {
+        var st = stuById(T.sid); if (!st) return null;
+        var R = range(), e = ent(), c = { p: 0, a: 0, e: 0 }, min = 0, auto = [], recs = [];
+        Object.keys(db.attendance).forEach(function (k) { var r = db.attendance[k]; if (r && r.day && r.day >= R.lo && r.day <= R.hi && r.st && r.st[st.id]) recs.push(r) });
+        recs.sort(function (a, b) { return a.day < b.day ? -1 : a.day > b.day ? 1 : 0 });
+        recs.forEach(function (r) {
+          var v = r.st[st.id]; if (c[v] === undefined) return; c[v]++; if (v === "p") min += r.dur || r.gd || 30;
+          if (r.note && !e.noAuto && auto.length < 8) auto.push((DZ.per === "d" ? "" : fd(r.day, { day: "numeric", month: "long" }) + ": ") + r.note)
+        });
+        var cx = 0; db.groups.forEach(function (g) {
+          if (!g.students || g.students.indexOf(st.id) < 0 || !g.ex) return;
+          Object.keys(g.ex).forEach(function (k) { if (!/^\d{4}-\d\d-\d\d$/.test(k) || k < R.lo || k > R.hi) return; var x = g.ex[k]; if (x && x.c) { try { if (baseOcc(g, k) && !idle(g, k)) cx++ } catch (_) { } } })
+        });
+        var mk = (db.marks && db.marks[st.id]) || {}, per = {}, nm = 0; Object.keys(mk).forEach(function (k) { nm++; var n = k.split(":")[0]; per[n] = (per[n] || 0) + 1 });
+        var top = Object.keys(per).sort(function (a, b) { return per[b] - per[a] })[0];
+        var tot = c.p + c.a + c.e, pct = tot ? Math.round(c.p * 100 / tot) : null, id = ident();
+        return {
+          type: "student", per: DZ.per, title: "تقرير الطالب " + PER[DZ.per],
+          academyName: id.name, tagline: id.tag, academyLogo: id.logo, teacherName: S().name || "",
+          studentName: st.name, studentPhone: st.phone || "", reportPeriod: R.label,
+          reportDate: fd(todayStr(), { day: "numeric", month: "long", year: "numeric" }),
+          attendanceCount: c.p, absenceCount: c.a, excuseCount: c.e, cancelledCount: cx, totalSessions: tot,
+          attendancePercentage: pct, totalHours: min,
+          quranProgress: { from: e.from || "", to: e.to || "", pages: e.pages || "", newMem: e.newMem || "", revision: e.revision || "", marked: nm, topSurah: top ? "سورة " + SN[top - 1] : "" },
+          teacherEvaluation: e.ev || "", lessonNotes: auto.concat(lines(e.notes)), homework: lines(e.hw),
+          motivationalMessage: e.msg || autoMsg(st, tot, pct)
+        }
+      }
+
+      /* ---------- عناصر SVG ---------- */
+      var IC = {
+        user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c.6-4 3.6-6 7.5-6s6.9 2 7.5 6"/>',
+        teacher: '<circle cx="12" cy="10" r="3.2"/><path d="M5 21c.5-3.8 3.4-5.6 7-5.6s6.5 1.8 7 5.6"/><path d="M7 6l5-3 5 3"/>',
+        cal: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
+        calOk: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15.5l2.2 2.2 4-4.2"/>',
+        calX: '<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9.5 14l5 5M14.5 14l-5 5"/>',
+        clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.2 2"/>',
+        ban: '<circle cx="12" cy="12" r="8.5"/><path d="M6 18L18 6"/>',
+        book: '<path d="M12 6c-2-1.6-5-2-8.5-1.5v13c3.5-.5 6.5-.1 8.5 1.5 2-1.6 5-2 8.5-1.5v-13C17 4 14 4.4 12 6zM12 6v13"/>',
+        note: '<path d="M6 3.5h9l3.5 3.5v13.5H6z"/><path d="M9 11h6M9 15h6"/>',
+        star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/>',
+        pen: '<path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19z"/>',
+        pages: '<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+        check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+        refresh: '<path d="M20 11a8 8 0 0 0-14-4.5L4 9M4 13a8 8 0 0 0 14 4.5L20 15M4 4v5h5M20 20v-5h-5"/>'
+      };
+      function ic(n, col, sz) { sz = sz || 22; return '<svg width="' + sz + '" height="' + sz + '" viewBox="0 0 24 24" fill="none" stroke="' + (col || GRN) + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + IC[n] + '</svg>' }
+      function diamond() { return '<svg width="13" height="13" viewBox="0 0 14 14"><path d="M7 0l7 7-7 7-7-7z" fill="#D4B05F"/></svg>' }
+      function logo() { return '<svg width="66" height="52" viewBox="0 0 64 50"><path d="M32 11C26 6 15 5 4 7v28c11-2 22-1 28 4 6-5 17-6 28-4V7C49 5 38 6 32 11z" fill="#FFF8E0" stroke="#0B5A44" stroke-width="2.4" stroke-linejoin="round"/><path d="M32 11v28" stroke="#0B5A44" stroke-width="2.4"/><path d="M9 14c6-1 12 0 18 2M9 20c6-1 12 0 18 2M9 26c6-1 12 0 18 2M55 14c-6-1-12 0-18 2M55 20c-6-1-12 0-18 2M55 26c-6-1-12 0-18 2" stroke="#C8A55A" stroke-width="1.6" fill="none"/><path d="M4 35c11-2 22-1 28 4 6-5 17-6 28-4v5c-11-2-22-1-28 4-6-5-17-6-28-4z" fill="#0B5A44"/></svg>' }
+      function trophy(u) { return '<svg width="58" height="62" viewBox="0 0 58 62"><defs><linearGradient id="' + u + 't" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6D874"/><stop offset="1" stop-color="#C8922B"/></linearGradient></defs><path d="M14 6h30v16c0 10-7 17-15 17S14 32 14 22z" fill="url(#' + u + 't)"/><path d="M14 11H5c0 10 4 16 11 18M44 11h9c0 10-4 16-11 18" fill="none" stroke="#C8922B" stroke-width="3.5" stroke-linecap="round"/><rect x="26" y="38" width="6" height="9" fill="#C8922B"/><rect x="17" y="47" width="24" height="7" rx="2" fill="url(#' + u + 't)"/><rect x="13" y="54" width="32" height="5" rx="2" fill="#8A5D18"/></svg>' }
+      function corner(u) {
+        var d = "M0 0H340C326 24 298 46 262 60C216 78 160 72 112 94C66 115 34 146 0 186Z";
+        return '<svg class="dz-corner" width="340" height="190" viewBox="0 0 340 190"><defs><linearGradient id="' + u + 'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0C6049"/><stop offset="1" stop-color="#083A2D"/></linearGradient><pattern id="' + u + 'p" width="22" height="22" patternUnits="userSpaceOnUse"><path d="M11 1l10 10-10 10L1 11z" fill="none" stroke="#D9BC72" stroke-opacity=".22"/><circle cx="11" cy="11" r="2" fill="#D9BC72" fill-opacity=".18"/></pattern></defs>'
+          + '<path d="' + d + '" fill="url(#' + u + 'g)"/><path d="' + d + '" fill="url(#' + u + 'p)"/>'
+          + '<g fill="#fff" fill-opacity=".10"><path d="M38 90V62c0-14 10-22 22-34 12 12 22 20 22 34v28z"/><rect x="14" y="40" width="9" height="50"/><path d="M13 40l5.5-12L24 40z"/><rect x="96" y="44" width="9" height="46"/><path d="M95 44l5.5-12L106 44z"/></g>'
+          + '<path d="M340 9C326 33 298 55 261 69C215 87 159 81 111 103C65 124 33 155 0 196" fill="none" stroke="#D4B05F" stroke-width="3"/><path d="M340 15C327 38 299 60 262 74C216 92 160 86 112 108C66 129 35 160 0 204" fill="none" stroke="#D4B05F" stroke-opacity=".5" stroke-width="1.2"/></svg>'
+      }
+      function sky() {
+        var g = '<path d="M20 110V70c0-14 10-22 22-36 12 14 22 22 22 36v40z"/><rect x="76" y="48" width="9" height="62"/><path d="M75 48l5.5-14L86 48z"/><rect x="2" y="58" width="9" height="52"/><path d="M1 58l5.5-13L12 58z"/><path d="M95 110V84c0-9 7-14 15-22 8 8 15 13 15 22v26z"/>';
+        return '<svg class="dz-sky" width="794" height="110" viewBox="0 0 794 110"><g fill="#C8A55A" fill-opacity=".17">' + g + '</g><g fill="#C8A55A" fill-opacity=".17" transform="translate(794 0) scale(-1 1)">' + g + '</g></svg>'
+      }
+      function arch(u) {
+        var L = "", i, y, off, x1, x2;
+        for (i = 0; i < 7; i++) {
+          off = 10 + i * 6.2;
+          y = function (x, side) { return (136 + (side ? (204 - x) : (x - 36)) * 0.1667 + off).toFixed(1) };
+          L += '<path d="M44 ' + y(44, 0) + 'L112 ' + y(112, 0) + 'M128 ' + y(128, 1) + 'L196 ' + y(196, 1) + '" stroke="#7A6A4A" stroke-opacity=".6" stroke-width="1.2"/>'
+        }
+        return '<svg width="214" height="243" viewBox="0 0 240 272"><defs><linearGradient id="' + u + 'a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C5DBD2"/><stop offset=".6" stop-color="#E4EBDD"/><stop offset="1" stop-color="#F6EBCB"/></linearGradient></defs>'
+          + '<path d="M8 270V128C8 82 44 52 78 32C98 20 112 12 120 2C128 12 142 20 162 32C196 52 232 82 232 128V270Z" fill="url(#' + u + 'a)" stroke="#C8A55A" stroke-width="3"/>'
+          + '<path d="M17 270V130C17 90 48 62 82 43C100 32 112 24 120 14C128 24 140 32 158 43C192 62 223 90 223 130V270Z" fill="none" stroke="#C8A55A" stroke-opacity=".55" stroke-width="1.2"/>'
+          + '<g fill="#fff" fill-opacity=".4"><path d="M92 200v-38c0-18 13-28 28-44 15 16 28 26 28 44v38z"/><rect x="60" y="130" width="11" height="70"/><path d="M58.5 130L65.5 112l7 18z"/><rect x="169" y="130" width="11" height="70"/><path d="M167.5 130L174.5 112l7 18z"/><path d="M30 200v-30c0-10 8-16 16-24 8 8 16 14 16 24v30z"/><path d="M178 200v-30c0-10 8-16 16-24 8 8 16 14 16 24v30z"/></g>'
+          + '<ellipse cx="120" cy="266" rx="84" ry="6" fill="#000" fill-opacity=".12"/>'
+          + '<g stroke-linecap="round"><path d="M64 262L152 206" stroke="#3A2820" stroke-width="13"/><path d="M176 262L88 206" stroke="#4A3329" stroke-width="13"/><path d="M62 259L150 203" stroke="#6B4A3B" stroke-width="2"/></g>'
+          + '<path d="M26 134L120 150L214 134V196L120 212L26 196Z" fill="#0B5A44" stroke="#C8A55A" stroke-width="2" stroke-linejoin="round"/>'
+          + '<path d="M120 150L36 136V188L120 203Z" fill="#FFFBEC" stroke="#DCCFA6"/><path d="M120 150L204 136V188L120 203Z" fill="#FFFBEC" stroke="#DCCFA6"/>' + L + '<path d="M120 150V203" stroke="#CDBE92"/></svg>'
+      }
+      function donut(p) { var C = 2 * Math.PI * 50, o = C * p / 100; return '<svg width="128" height="128" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="#DDD5BC" stroke-width="13"/><circle cx="60" cy="60" r="50" fill="none" stroke="#0B5A44" stroke-width="13" stroke-dasharray="' + o.toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 60 60)"/></svg><div class="dz-dn"><b>' + AR(p) + '٪</b><small>نسبة الالتزام</small></div>' }
+
+      /* ---------- القالب «زمردي»: بياناته كلها من كائن التقرير فقط ---------- */
+      function head(i, t) { return '<div class="dz-h">' + ic(i, "#E8CF8B", 20) + '<span>' + t + '</span></div>' }
+      function irow(i, l, v) { return '<div class="dz-ir"><span class="dz-ii">' + ic(i, GRN, 20) + '</span><span class="dz-il">' + l + ':</span><b class="dz-iv">' + v + '</b></div>' }
+      function prow(i, l, v, cls) { return '<div class="dz-pr"><span class="dz-pi">' + ic(i, GRN, 17) + '</span><span class="dz-pl">' + l + ':</span><span class="dz-pv' + (cls ? " " + cls : "") + '">' + v + '</span></div>' }
+      function stat(i, col, bg, bd, l, v) { return '<div class="dz-st" style="background:' + bg + ';border-color:' + bd + '">' + ic(i, col, 30) + '<b>' + l + '</b><strong>' + AR(v) + '</strong></div>' }
+      function ul(a) { return '<ul class="dz-ul">' + a.map(function (x) { return '<li>' + esc(x) + '</li>' }).join("") + '</ul>' }
+
+      function emerald(d, u) {
+        var h = '<div class="dz-page" dir="rtl"><div class="dz-fr"></div>' + corner(u) + sky() + '<div class="dz-in">';
+        h += '<div class="dz-brand"><div class="dz-bt"><b>' + esc(d.academyName) + '</b>' + (d.tagline ? '<span>' + esc(d.tagline) + '</span>' : "") + '</div>' + (d.academyLogo ? '<img class="dz-logo" src="' + d.academyLogo + '" alt="">' : logo()) + '</div>';
+        h += '<div class="dz-top"><div class="dz-infocol"><div class="dz-rib">' + diamond() + '<span>' + esc(d.title) + '</span>' + diamond() + '</div>'
+          + irow("user", "الطالب", esc(d.studentName)) + irow("cal", "الفترة", esc(d.reportPeriod)) + (d.teacherName ? irow("teacher", "المعلم", esc(d.teacherName)) : "")
+          + '</div><div class="dz-arch">' + arch(u) + '</div></div>';
+        var any = 0;
+        if (d.totalSessions > 0 || d.cancelledCount > 0) {
+          any = 1; var pc = d.attendancePercentage;
+          h += '<div class="dz-sec">' + head("calOk", "الالتزام بالحضور") + '<div class="dz-box"><div class="dz-att"><div class="dz-sts">'
+            + stat("calOk", "#1B7A55", "#EAF4EC", "#BBD9C4", "الحضور", d.attendanceCount)
+            + stat("clock", "#C58A0B", "#FCF4DC", "#E6D08F", "الاعتذار", d.excuseCount)
+            + stat("calX", "#C0392B", "#FCEDEA", "#EBC1BB", "الغياب", d.absenceCount)
+            + (d.cancelledCount ? stat("ban", "#5E6F6B", "#EEF0F0", "#CFD6D4", "ملغاة", d.cancelledCount) : "")
+            + '</div>' + (pc != null ? '<div class="dz-gauge">' + donut(pc) + '</div>' : "") + '</div>'
+            + '<div class="dz-tot"><span>إجمالي الحصص: ' + AR(d.totalSessions) + '</span>' + (d.totalHours ? '<span>ساعات الحضور: ' + fm(d.totalHours) + '</span>' : "") + '</div></div></div>'
+        }
+        var q = d.quranProgress, pr = "";
+        if (q.from) pr += prow("book", "من", esc(q.from)); if (q.to) pr += prow("book", "إلى", esc(q.to));
+        if (q.newMem) pr += prow("check", "حفظ جديد", esc(q.newMem)); if (q.revision) pr += prow("refresh", "مراجعة", esc(q.revision));
+        if (q.pages) pr += prow("pages", "عدد الصفحات", esc(q.pages));
+        if (q.marked) pr += prow("star", "كلمات معلَّمة للمراجعة", AR(q.marked) + (q.topSurah ? " (أكثرها في " + esc(q.topSurah) + ")" : ""));
+        if (d.teacherEvaluation) pr += prow("star", "التقدير", esc(d.teacherEvaluation), "dz-ev");
+        var cols = "";
+        if (pr) cols += '<div class="dz-sec">' + head("book", "المنجز في المصحف") + '<div class="dz-box">' + pr + '</div></div>';
+        if (d.lessonNotes.length) cols += '<div class="dz-sec">' + head("note", "ملاحظات الحصص") + '<div class="dz-box">' + ul(d.lessonNotes) + '</div></div>';
+        if (cols) { any = 1; h += '<div class="dz-cols">' + cols + '</div>' }
+        if (d.homework.length) { any = 1; h += '<div class="dz-sec dz-hw">' + head("pen", "الواجب والتوصيات") + '<div class="dz-box">' + ul(d.homework) + '</div></div>' }
+        if (!any) h += '<div class="dz-empty">لا توجد حصص أو بيانات مسجّلة لهذه الفترة.</div>';
+        if (d.motivationalMessage) h += '<div class="dz-msg">' + trophy(u) + '<p>' + lines(d.motivationalMessage).map(esc).join("<br>") + '</p>' + diamond() + '</div>';
+        h += '<div class="dz-ft">صدر بتاريخ ' + esc(d.reportDate) + '</div></div></div>';
+        return h
+      }
+      var TPL = { emerald: { name: "زمردي", render: emerald } };
+      function html(d) { return TPL[DZ.tpl].render(d, "u" + (++UID)) }
+      window.RPT = { build: build, templates: TPL, html: html };
+
+      /* ---------- نص واتساب من نفس بيانات التقرير ---------- */
+      function waText(d) {
+        var L = ["السلام عليكم ورحمة الله وبركاته", "📖 " + d.title + " — " + d.studentName, "🗓 " + d.reportPeriod, ""];
+        if (d.totalSessions) { L.push("✓ حضر: " + AR(d.attendanceCount) + " حصة", "✕ غاب: " + AR(d.absenceCount), "📝 اعتذر: " + AR(d.excuseCount)); if (d.cancelledCount) L.push("🚫 ملغاة: " + AR(d.cancelledCount)); L.push("📊 نسبة الالتزام: " + AR(d.attendancePercentage) + "٪"); if (d.totalHours) L.push("⏱ ساعات الحضور: " + fm(d.totalHours)) }
+        var q = d.quranProgress, p = []; if (q.from) p.push("من: " + q.from); if (q.to) p.push("إلى: " + q.to); if (q.newMem) p.push("حفظ جديد: " + q.newMem); if (q.revision) p.push("مراجعة: " + q.revision); if (q.pages) p.push("عدد الصفحات: " + q.pages); if (d.teacherEvaluation) p.push("التقدير: " + d.teacherEvaluation);
+        if (p.length) L.push("", "📖 المنجز في المصحف:"), L.push.apply(L, p.map(function (x) { return "• " + x }));
+        if (d.lessonNotes.length) L.push("", "📝 ملاحظات الحصص:"), L.push.apply(L, d.lessonNotes.map(function (x) { return "• " + x }));
+        if (d.homework.length) L.push("", "✏️ الواجب والتوصيات:"), L.push.apply(L, d.homework.map(function (x) { return "• " + x }));
+        if (d.motivationalMessage) L.push("", d.motivationalMessage);
+        if (d.teacherName) L.push("— " + d.teacherName); L.push("وفّقكم الله وبارك فيكم 🌿"); return L.join("\n")
+      }
+
+      /* ---------- التصدير: PDF بالطباعة (A4) و PNG بـ html2canvas ---------- */
+      function fname(d) { return ("تقرير-" + d.studentName + "-" + d.reportPeriod).replace(/[\\\/:*?"<>|\s]+/g, "-").slice(0, 80) }
+      function pdfOut() {
+        var d = build(); if (!d) return; var p = document.createElement("div"); p.id = "rpPrint"; p.innerHTML = html(d); document.body.appendChild(p);
+        var pv = document.querySelector("#dz-sc .dz-page"), ph = pv ? pv.offsetHeight : 0, z = ph > 1115 ? Math.max(0.7, 1115 / ph) : 1;
+        if (z < 1) { var pp = p.firstChild; pp.style.zoom = z; pp.style.width = (793 / z) + "px"; pp.style.minHeight = (1115 / z) + "px" }
+        var pg = document.createElement("style"); pg.id = "dzPg"; pg.textContent = "@page{size:A4;margin:0}"; document.head.appendChild(pg); document.body.classList.add("rpp");
+        var old = document.title, fin = function () { document.body.classList.remove("rpp"); p.remove(); pg.remove(); document.title = old; window.removeEventListener("afterprint", fin) };
+        document.title = fname(d); window.addEventListener("afterprint", fin); setTimeout(function () { try { window.print() } catch (e) { toast("الطباعة غير متاحة هنا، استخدم «حفظ كصورة»"); fin() } }, 250); setTimeout(fin, 180000)
+      }
+      function h2c(cb) { if (window.html2canvas) return cb(); var s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; s.onload = cb; s.onerror = function () { toast("تعذّر تحميل أداة الصورة، جرّب PDF") }; document.head.appendChild(s) }
+      function pngOut() {
+        var d = build(); if (!d) return; toast("جاري تجهيز الصورة…");
+        h2c(function () {
+          var box = document.createElement("div"); box.style.cssText = "position:fixed;left:-10000px;top:0;width:794px"; box.innerHTML = html(d); document.body.appendChild(box);
+          (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { return html2canvas(box.firstChild, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false }) }).then(function (cv) {
+            box.remove(); cv.toBlob(function (bl) {
+              var f = new File([bl], fname(d) + ".png", { type: "image/png" });
+              if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f] }).catch(function () { });
+              else { var a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); toast("تم حفظ الصورة ✓") }
+            }, "image/png")
+          }).catch(function () { box.remove(); toast("تعذّر إنشاء الصورة") })
+        })
+      }
+
+      /* ---------- الواجهة داخل صفحة التقارير ---------- */
+      function chip(on, a, l) { return '<button class="ht' + (on ? " on" : "") + '" ' + a + '>' + l + '</button>' }
+      function inp(f, l, ph, ml, e) { var v = e[f] || ""; return '<label class="dzl"><span>' + l + '</span>' + (ml ? '<textarea data-dzf="' + f + '" rows="3" placeholder="' + ph + '" style="direction:rtl">' + esc(v) + '</textarea>' : '<input data-dzf="' + f + '" value="' + esc(v) + '" placeholder="' + ph + '">') + '</label>' }
+      function view() {
+        var ss = sortedStu(db.students); if (!ss.length) return '<div class="card empty"><p>أضف طلابًا أولًا.</p></div>';
+        var st = stuById(T.sid) || ss[0]; T.sid = st.id; var e = ent(), id = ident();
+        setTimeout(function () { paint(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit) }, 0);
+        return '<div class="hero hh"><h2>🕌 التقرير المصمّم</h2><div class="mute">تقرير بتصميم احترافي من بيانات الموقع: عدّل المدخلات اليدوية وشوف المعاينة مباشرة، وبعدين PDF أو صورة.</div></div>'
+          + '<div class="card"><div class="row"><select id="dz-s" style="flex:1;min-width:150px">' + ss.map(function (x) { return '<option value="' + x.id + '"' + (x.id === st.id ? " selected" : "") + '>' + esc(x.name) + '</option>' }).join("") + '</select>'
+          + chip(DZ.per === "d", 'data-dz="per" data-v="d"', "يومي") + chip(DZ.per === "w", 'data-dz="per" data-v="w"', "أسبوعي") + chip(DZ.per === "m", 'data-dz="per" data-v="m"', "شهري") + '</div>'
+          + '<div class="row" style="margin-top:8px;align-items:center">' + (DZ.per === "m" ? '<label class="dzl" style="flex:1"><span>الشهر</span><input type="month" id="dz-m" value="' + T.ym + '"></label>' : '<label class="dzl" style="flex:1"><span>' + (DZ.per === "w" ? "آخر يوم في الأسبوع (يغطي ٧ أيام قبله)" : "اليوم") + '</span><input type="date" id="dz-d" value="' + DZ.day + '"></label>')
+          + '<div style="display:flex;gap:6px;align-items:center"><span class="mute" style="font-size:12px">القالب:</span>' + Object.keys(TPL).map(function (k) { return chip(DZ.tpl === k, 'data-dz="tpl" data-v="' + k + '"', TPL[k].name) }).join("") + '</div></div></div>'
+          + '<details class="card dzd" open><summary>✍ بيانات يدوية لهذا التقرير</summary><div class="dz-note">الحضور والغياب والساعات بتتحسب تلقائي من الحصص المسجّلة. هنا تضيف اللي مش متسجّل في النظام (الأقسام الفاضية بتختفي من التقرير).</div><div class="dzg">'
+          + inp("from", "من (سورة/آية)", "مثال: سورة الواقعة (١)", 0, e) + inp("to", "إلى (سورة/آية)", "مثال: سورة الحديد (٢٩)", 0, e) + inp("pages", "عدد الصفحات", "١٢", 0, e)
+          + inp("newMem", "حفظ جديد", "", 0, e) + inp("revision", "مراجعة", "", 0, e)
+          + '<label class="dzl"><span>التقدير</span><select data-dzf="ev"><option value=""></option>' + EVS.map(function (x) { return '<option' + (e.ev === x ? " selected" : "") + '>' + x + '</option>' }).join("") + '</select></label></div>'
+          + '<div class="dzg">' + inp("notes", "ملاحظات إضافية (كل سطر نقطة)", "", 1, e) + inp("hw", "الواجب / التوصيات (كل سطر نقطة)", "", 1, e) + inp("msg", "رسالة تحفيزية (اتركها فاضية لرسالة تلقائية)", "", 1, e) + '</div>'
+          + '<label style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:13px"><input type="checkbox" data-dzc="auto"' + (e.noAuto ? "" : " checked") + '> إضافة ملاحظات الحصص المسجّلة تلقائيًا</label></details>'
+          + '<details class="card dzd"><summary>🏷 هوية التقرير (الاسم والشعار)</summary><div class="dzg"><label class="dzl"><span>اسم الأكاديمية</span><input data-dzi="rptAcademy" value="' + esc(id.name) + '"></label><label class="dzl"><span>الوصف تحت الاسم</span><input data-dzi="rptTag" value="' + esc(id.tag) + '"></label></div>'
+          + '<div class="acts"><label class="btn" style="cursor:pointer">⬆ ' + (id.logo ? "تغيير الشعار" : "رفع شعار") + '<input type="file" id="dz-logo" accept="image/*" hidden></label>' + (id.logo ? '<button data-dz="rmlogo">حذف الشعار</button>' : "") + '</div></details>'
+          + '<div class="card"><div class="acts"><button class="p" data-dz="pdf">🖨 طباعة / حفظ PDF</button><button data-dz="png">🖼 حفظ كصورة PNG</button><button data-dz="wa">📲 واتساب' + (st.phone ? "" : " (بدون رقم)") + '</button><button data-dz="cp">📋 نسخ النص</button></div><div class="dz-note" id="dz-hint"></div>'
+          + '<div class="dz-stage" id="dz-stage"><div class="dz-sc" id="dz-sc"></div></div></div>'
+      }
+      function paint() { var sc = document.getElementById("dz-sc"); if (!sc) return; var d = build(); sc.innerHTML = d ? html(d) : ""; var h = document.getElementById("dz-hint"); if (h && d) h.textContent = d.totalSessions || d.cancelledCount ? "" : "لا توجد حصص مسجّلة لهذا الطالب في الفترة دي، فقسم الحضور مخفي."; fit() }
+      function fit() {
+        var bx = document.getElementById("dz-stage"), sc = document.getElementById("dz-sc"); if (!bx || !sc || !sc.firstChild) return;
+        var w = bx.clientWidth || 794, s = Math.min(1, w / 794); sc.style.transformOrigin = "top right"; sc.style.transform = "scale(" + s + ")"; sc.style.right = w > 794 ? (w - 794) / 2 + "px" : "0"; bx.style.height = Math.ceil(sc.firstChild.offsetHeight * s) + "px"
+      }
+      window.addEventListener("resize", fit);
+
+      var _o = reportsV;
+      reportsV = function () {
+        var h = _o(), i = h.indexOf("</div>"), on = T.tab === "dz";
+        return h.slice(0, i) + '<button class="ht' + (on ? " on" : "") + '" data-r3="tab" data-v="dz">🕌 التقرير المصمّم</button></div>' + (on ? view() : h.slice(i + 6))
+      };
+      document.addEventListener("input", function (ev) {
+        var t = ev.target; if (!t.getAttribute || T.tab !== "dz") return; var f = t.getAttribute("data-dzf"), i = t.getAttribute("data-dzi");
+        if (f) { put(f, t.value.trim() === "" ? "" : t.value); paint() } else if (i) { S()[i] = t.value; save(); paint() }
+      });
+      document.addEventListener("change", function (ev) {
+        var t = ev.target; if (!t.getAttribute || T.tab !== "dz") return;
+        if (t.id === "dz-s") { T.sid = t.value; render() } else if (t.id === "dz-d") { DZ.day = t.value || todayStr(); render() } else if (t.id === "dz-m") { T.ym = t.value || todayStr().slice(0, 7); render() }
+        else if (t.getAttribute("data-dzc") === "auto") { put("noAuto", t.checked ? "" : 1); paint() }
+        else if (t.id === "dz-logo" && t.files[0]) { var fr = new FileReader(); fr.onload = function () { var im = new Image(); im.onload = function () { var s = Math.min(1, 220 / Math.max(im.width, im.height)), cv = document.createElement("canvas"); cv.width = Math.round(im.width * s); cv.height = Math.round(im.height * s); cv.getContext("2d").drawImage(im, 0, 0, cv.width, cv.height); S().rptLogo = cv.toDataURL("image/png"); save(); render() }; im.src = fr.result }; fr.readAsDataURL(t.files[0]) }
+      });
+      document.addEventListener("click", function (ev) {
+        var b = ev.target.closest && ev.target.closest("[data-dz]"); if (!b || T.tab !== "dz") return; var a = b.getAttribute("data-dz"), v = b.getAttribute("data-v");
+        if (a === "per") { DZ.per = v; render() } else if (a === "tpl") { DZ.tpl = v; render() } else if (a === "pdf") pdfOut(); else if (a === "png") pngOut();
+        else if (a === "rmlogo") { delete S().rptLogo; save(); render() }
+        else if (a === "cp" || a === "wa") { var d = build(); if (!d) return; var t = waText(d); if (a === "cp") copyTxt(t); else { var ph = normPh(d.studentPhone || ""); window.open((ph ? "https://wa.me/" + ph + "?text=" : "https://api.whatsapp.com/send?text=") + encodeURIComponent(t), "_blank") || copyTxt(t) } }
+      });
+      nav(); if (view && location.hash === "#reports") render()
     })();
   </script>
 </body>
