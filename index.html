@@ -8194,7 +8194,7 @@
         var del = T.closest("[data-del]"); if (del) { var k = del.getAttribute("data-del"), m = mk(); if (m) { delete m[k]; save(); var w = document.querySelector('.w[data-k="' + k + '"]'); if (w) w.className = "w"; refresh() } return }
         var go = T.closest("[data-go]"); if (go) { var q = go.getAttribute("data-go").split(":"); surah = +q[0]; render(); gotoKey(q.join(":")); return }
         var w = T.closest(".w");
-        if (w && mode) { if (!getStu()) { toast("اختر طالباً أولاً أو أضف طالباً جديداً"); return } var mm = mk(), kk = w.getAttribute("data-k"); if (mm[kk] === brush) delete mm[kk]; else mm[kk] = brush; w.className = "w" + (mm[kk] ? " m" + mm[kk] : ""); save(); refresh(); return }
+        if (w && mode) { if (!getStu()) { toast("اختر طالباً أولاً أو أضف طالباً جديداً"); return } var mm = mk(), kk = w.getAttribute("data-k"); if (mm[kk] === brush) delete mm[kk]; else mm[kk] = brush; w.className = "w" + (mm[kk] ? " m" + mm[kk] : ""); try { window.rptMkStamp && rptMkStamp(db.settings.lastStudent, kk, mm[kk]) } catch (_) { } save(); refresh(); return }
         var vsEl = T.closest(".vs"); if (vsEl && !mode) { var a0 = +vsEl.getAttribute("data-a"); selA = (selA === a0) ? 0 : a0; applySel(); return }
         var b = T.closest("[data-act]"); if (!b) return; var act = b.getAttribute("data-act");
         if (act === "mode") { mode = !mode; b.classList.toggle("p", mode); document.querySelector(".mushaf").classList.toggle("mark", mode); if (mode && !getStu()) toast("اختر طالباً أو أضف طالباً ثم اضغط على الكلمات") }
@@ -14051,7 +14051,7 @@
       }
       var TPL = { emerald: { name: "زمردي", render: emerald } };
       function html(d) { return TPL[DZ.tpl].render(d, "u" + (++UID)) }
-      window.RPT = { build: build, templates: TPL, html: html };
+      window.RPT = { build: build, templates: TPL, html: html, ui: { ic: ic, irow: irow, head: head, ul: ul, diamond: diamond, logo: logo, trophy: trophy, corner: corner, sky: sky, arch: arch, ident: ident, lines: lines, fm: fm } };
 
       /* ---------- نص واتساب من نفس بيانات التقرير ---------- */
       function waText(d) {
@@ -14142,6 +14142,641 @@
         else if (a === "cp" || a === "wa") { var d = build(); if (!d) return; var t = waText(d); if (a === "cp") copyTxt(t); else { var ph = normPh(d.studentPhone || ""); window.open((ph ? "https://wa.me/" + ph + "?text=" : "https://api.whatsapp.com/send?text=") + encodeURIComponent(t), "_blank") || copyTxt(t) } }
       });
       nav(); if (view && location.hash === "#reports") render()
+    })();
+  </script>
+  <style id="qa-css">
+    /* ===== تاب «بعد الحصة» (تقارير حلقات اليوم) ===== */
+    .qa-sum {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 6px 0
+    }
+
+    .qa-ses {
+      padding: 0 !important;
+      overflow: hidden
+    }
+
+    .qa-sh {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      background: linear-gradient(135deg, var(--card2), var(--card))
+    }
+
+    .qa-row {
+      padding: 10px 14px;
+      border-top: 1px solid var(--line)
+    }
+
+    .qa-r1 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .qa-r1 b {
+      font-size: 15px
+    }
+
+    .qa-b {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line)
+    }
+
+    .qa-b.sent {
+      background: #E3F3E8;
+      color: #176B3A;
+      border-color: #B7DCC3
+    }
+
+    .qa-b.late {
+      background: #FDE8E5;
+      color: #B3261E;
+      border-color: #F2BBB5
+    }
+
+    .qa-b.unsent {
+      background: #FFF3D6;
+      color: #8A5A00;
+      border-color: #EBCF8D
+    }
+
+    .qa-b.upcoming {
+      background: var(--card2);
+      color: var(--mute, #777)
+    }
+
+    .qa-acts {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px
+    }
+
+    .qa-acts button {
+      font-size: 13px;
+      padding: 5px 11px
+    }
+
+    .qa-pv {
+      padding: 10px 14px 14px;
+      border-top: 1px dashed var(--line);
+      background: var(--card2)
+    }
+
+    .qa-stage {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 12px
+    }
+
+    .qa-sc {
+      position: absolute;
+      top: 0;
+      width: 794px
+    }
+
+    .qa-ed textarea {
+      width: 100%;
+      direction: rtl;
+      min-height: 130px;
+      font: inherit;
+      line-height: 1.7
+    }
+
+    .qa-vg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 6px 14px;
+      font-size: 12.5px;
+      margin-top: 6px
+    }
+
+    .qa-vg code {
+      background: var(--card2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 12.5px;
+      cursor: pointer
+    }
+
+    .qa-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 8px 0
+    }
+
+    .qa-chips button {
+      font-size: 12.5px;
+      padding: 3px 10px;
+      border-radius: 999px
+    }
+
+    .qa-out {
+      white-space: pre-wrap;
+      direction: rtl;
+      background: var(--card2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      line-height: 1.8;
+      font-size: 14px;
+      min-height: 60px
+    }
+
+    .qa-warn {
+      color: var(--bad, #B3261E);
+      font-size: 12.5px;
+      margin-top: 6px
+    }
+
+    .qa-dirty {
+      color: #8A5A00;
+      font-size: 12.5px;
+      font-weight: 700
+    }
+
+    .qa-lock {
+      text-align: center;
+      padding: 30px 14px
+    }
+
+    .ht.qa-lk {
+      opacity: .65
+    }
+
+    .qa-fm {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0
+    }
+
+    .qa-fm label {
+      display: grid;
+      gap: 3px;
+      font-size: 13px
+    }
+
+    .qa-fm textarea,
+    .qa-fm input,
+    .qa-fm select {
+      width: 100%;
+      direction: rtl;
+      font: inherit
+    }
+
+    /* تصميم التقرير اليومي (يُبنى فوق فئات dz-* الموجودة) */
+    .dq-ay {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px dashed #E4DABB
+    }
+
+    .dq-ay:last-child {
+      border-bottom: 0
+    }
+
+    .dq-sr {
+      flex: 0 0 auto;
+      font-weight: 800;
+      color: #0B4D3A;
+      font-size: 15px;
+      min-width: 120px
+    }
+
+    .dq-ws {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex: 1;
+      min-width: 0
+    }
+
+    .dq-w {
+      font-style: normal;
+      font-family: "Amiri Quran", Cairo, serif;
+      font-size: 20px;
+      line-height: 1.7;
+      background: #FCEDEA;
+      border: 1px solid #EBC1BB;
+      color: #8E2A1F;
+      border-radius: 10px;
+      padding: 0 12px
+    }
+
+    .dq-w.t {
+      background: #FCF4DC;
+      border-color: #E6D08F;
+      color: #7A5300
+    }
+
+    .dq-w small {
+      font-family: Cairo, sans-serif;
+      font-size: 11px;
+      margin-inline-start: 4px
+    }
+
+    .dq-cnt {
+      margin-top: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #51635C
+    }
+
+    .dq-prev {
+      margin-top: 8px;
+      padding: 7px 12px;
+      background: #F4F1E4;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #51635C
+    }
+
+    .dq-gm {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px dashed #E4DABB;
+      font-size: 15px
+    }
+
+    .dq-gm:last-child {
+      border-bottom: 0
+    }
+
+    .dq-gm b {
+      flex: 1;
+      min-width: 0;
+      overflow-wrap: anywhere
+    }
+
+    .dq-pc {
+      background: #E5F0E8;
+      border: 1px solid #BBD9C4;
+      color: #176B3A;
+      border-radius: 999px;
+      padding: 0 12px;
+      font-weight: 800
+    }
+
+    .dq-stat {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border: 1.5px solid;
+      border-radius: 16px;
+      padding: 10px 18px;
+      font-size: 22px;
+      font-weight: 800
+    }
+  </style>
+  <script>
+    /* ===== تاب «بعد الحصة»: حلقات اليوم فقط + تقرير بصري + محرر قالب نص التقرير =====
+       التخزين: كله داخل db.settings.rptQ (يتحمّل بعد إعادة التحميل ويتزامن مع Firebase/النسخ الاحتياطي):
+         rptQ.ses[gid|day|sid] = { study, review, note, hw, ev, msg, txt }   ← مدخلات المعلم لكل طالب/حصة
+         rptQ.sent[gid|day|sid] = timestamp                                   ← حالة الإرسال لكل طالب/حصة
+         rptQ.base / rptQ.prompt / rptQ.final                                 ← النص الأساسي / الـPrompt / الـTemplate (كلٌّ على حدة)
+       وتاريخ علامات المصحف: db.settings.mkAt[studentId]["s:a:w"] = timestamp (اختياري؛ العلامات القديمة بلا تاريخ تُعتبر «سابقة»). */
+    (function () {
+      var T = window.rptT, X = window.RPT && window.RPT.ui;
+      if (!T || !X || typeof reportsV !== "function" || typeof db === "undefined") return;
+      var UID = 0, AQ = { f: "", sel: "", draft: null, pv: "real" };
+      var ST = { p: "حضر", a: "غاب", e: "اعتذر" };
+      var MS = { p: "ما شاء الله، بارك الله فيه وزاده حرصًا وتوفيقًا 🌟", a: "افتقدناه اليوم، ونرجو الانتظام في الحصص القادمة بإذن الله.", e: "نسأل الله له التيسير، ونتفق على موعد للتعويض إن شاء الله." };
+      var EVS = ["ممتاز", "جيد جدًا", "جيد", "مقبول", "يحتاج إلى متابعة"];
+      var LOCKED = { stu: 1, acad: 1, mon: 1, tpl: 1, dz: 1 };
+
+      /* ---------- المتغيرات المتاحة (اسم ثابت + وظيفة) ---------- */
+      var VARS = [
+        ["بيانات الطالب والحصة", [
+          ["اسم_الطالب", "اسم الطالب (تلقائي)"], ["اسم_الأكاديمية", "اسم الأكاديمية من هوية التقرير (تلقائي)"], ["اسم_المعلم", "اسمك من الإعدادات (تلقائي)"],
+          ["التاريخ", "يوم الحصة وتاريخها (تلقائي)"], ["موعد_الحصة", "وقت بداية الحصة (تلقائي)"], ["مدة_الحصة", "مدة الحصة بالدقائق، للحاضر فقط (تلقائي)"], ["حالة_الحضور", "حضر / غاب / اعتذر من سجل الحضور (تلقائي)"]]],
+        ["محتوى الحصة", [
+          ["محتوى_الحصة", "ما تمت دراسته (إدخال المعلم)"], ["أخطاء_المصحف", "مواضع الأخطاء المسجّلة في المصحف أثناء هذه الحصة فقط: سورة/آية/كلمة (تلقائي)"],
+          ["عدد_الأخطاء", "عدد الكلمات المعلَّمة في المصحف أثناء هذه الحصة (تلقائي)"], ["المراجعة", "ما تمت مراجعته (إدخال المعلم)"], ["نتائج_الألعاب", "نتائج الألعاب التعليمية المسجّلة يوم الحصة، إن وُجدت (تلقائي)"]]],
+        ["بيانات المعلم", [
+          ["ملاحظات_المعلم", "ملاحظاتك (إدخال المعلم، وإلا تُؤخذ ملاحظة الحصة المسجّلة في الحضور إن وُجدت)"], ["الواجب_القادم", "الواجب / المطلوب للحصة القادمة (إدخال المعلم)"],
+          ["التقييم", "تقدير المعلم (إدخال المعلم)"], ["الرسالة_الختامية", "رسالتك الختامية، وإلا تُستخدم الرسالة الحالية حسب الحضور"]]]];
+      var VNAMES = []; VARS.forEach(function (g) { g[1].forEach(function (v) { VNAMES.push(v[0]) }) });
+      var DEF_TPL = "السلام عليكم ورحمة الله وبركاته\n📖 تقرير حصة {اسم_الطالب}\n📅 {التاريخ} — {موعد_الحصة}\nالحالة: {حالة_الحضور}\n⏱ المدة: {مدة_الحصة}\n📖 ما تمت دراسته: {محتوى_الحصة}\n🔁 المراجعة: {المراجعة}\n📌 مواضع تحتاج إلى مراجعة ({عدد_الأخطاء}):\n{أخطاء_المصحف}\n🎮 المراجعة التفاعلية:\n{نتائج_الألعاب}\n📝 {ملاحظات_المعلم}\n✏️ الواجب القادم: {الواجب_القادم}\n⭐ التقييم: {التقييم}\n\n{الرسالة_الختامية}\n— {اسم_المعلم}\nوفّقكم الله وبارك فيكم 🌿";
+      var DEF_PROMPT = "حوّل نص التقرير المرفق إلى Template ديناميكي متوافق مع المتغيرات المتاحة في الموقع.\n\nالمطلوب:\n1. حافظ على صياغة النص الأصلي وأسلوبه وترتيبه قدر الإمكان.\n2. استبدل البيانات التي تتغير من طالب لآخر أو من حصة لأخرى بالمتغيرات المناسبة.\n3. استخدم المتغيرات المتاحة فقط، ولا تخترع متغيرات جديدة.\n4. إذا كان النص يطلب معلومة غير متاحة في النظام، اترك مكانها فارغًا أو احذف السطر حسب السياق.\n5. لا تضع بيانات افتراضية أو وهمية.\n6. حافظ على التنسيق والفقرات والرموز التعبيرية.\n7. أعد النص النهائي بصيغة Template فقط، دون شرح أو مقدمات.";
+
+      /* ---------- التخزين (داخل db.settings: متوافق مع load() ومع Firebase) ---------- */
+      function cfg() { return db.settings.rptQ || {} }
+      function wr() { return db.settings.rptQ = db.settings.rptQ || {} }
+      function sesGet(k) { return (cfg().ses || {})[k] || {} }
+      function sesPut(k, o) { var w = wr(), a = w.ses = w.ses || {}; var c = {}; Object.keys(o).forEach(function (f) { if (o[f] != null && String(o[f]).trim() !== "") c[f] = o[f] }); if (Object.keys(c).length) a[k] = c; else delete a[k]; save() }
+      function sentAt(k) { var s = cfg().sent; return (s && s[k]) || (db.repSent && db.repSent[k]) || 0 }
+      function sentPut(k, on) { var w = wr(), s = w.sent = w.sent || {}; if (on) s[k] = Date.now(); else { delete s[k]; if (db.repSent) delete db.repSent[k] } save() }
+      function tplSaved() { return cfg().final || "" }
+      function tplNow() { return AQ.draft != null ? AQ.draft : (tplSaved() || DEF_TPL) }
+      function promptNow() { var p = cfg().prompt; return p != null ? p : DEF_PROMPT }
+
+      /* ---------- ختم تاريخ علامات المصحف (يُستدعى من المصحف عند وضع/إزالة علامة) ---------- */
+      window.rptMkStamp = function (sid, key, val) {
+        if (!sid) return; var m = db.settings.mkAt = db.settings.mkAt || {}, o = m[sid] = m[sid] || {};
+        if (val) o[key] = Date.now(); else { delete o[key]; if (!Object.keys(o).length) delete m[sid] }
+      };
+      function dayOf(ts) { var d = new Date(ts); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) }
+
+      /* ---------- استخراج البيانات الفعلية ---------- */
+      function mistakes(sid, day) {
+        var m = (db.marks && db.marks[sid]) || {}, at = (db.settings.mkAt && db.settings.mkAt[sid]) || {}, cur = [], prev = 0, ps = {};
+        Object.keys(m).forEach(function (k) {
+          var p = k.split(":"), s = +p[0], a = +p[1], w = +p[2], ts = at[k];
+          if (ts && dayOf(ts) === day) { var tx = ""; try { tx = wtxt(s, a, w) } catch (e) { } cur.push({ s: s, a: a, w: w, c: m[k], t: tx }) }
+          else { prev++; ps[s] = (ps[s] || 0) + 1 }
+        });
+        cur.sort(function (x, y) { return x.s - y.s || x.a - y.a || x.w - y.w });
+        var top = Object.keys(ps).sort(function (x, y) { return ps[y] - ps[x] }).slice(0, 3).map(function (n) { return SN[n - 1] });
+        return { cur: cur, count: cur.length, prev: prev, top: top }
+      }
+      function gamesOf(sid, day) {
+        var g = (db.games && db.games[sid]) || {}, lo = new Date(day + "T00:00:00").getTime(), hi = lo + 864e5, by = {}, ord = [];
+        (g.tlog || []).forEach(function (e) {
+          if (e.t < lo || e.t >= hi || !(e.k === "ok" || e.k === "help" || e.k === "bad")) return;
+          var n = e.game || "لعبة"; if (!by[n]) { by[n] = { name: n, ok: 0, help: 0, bad: 0 }; ord.push(n) } by[n][e.k]++
+        });
+        return ord.map(function (n) { var x = by[n]; x.q = x.ok + x.help + x.bad; x.pct = x.q ? Math.round(x.ok * 100 / x.q) : 0; return x })
+      }
+      function mistTxt(d) {
+        var by = {}, ord = []; d.mist.cur.forEach(function (x) { var k = x.s + ":" + x.a; if (!by[k]) { by[k] = { s: x.s, a: x.a, w: [] }; ord.push(k) } by[k].w.push(x) });
+        return ord.map(function (k) { var y = by[k]; return "• سورة " + SN[y.s - 1] + " – الآية " + AR(y.a) + (y.w.some(function (x) { return x.t }) ? ": " + y.w.map(function (x) { return x.t ? "«" + x.t + "»" + (x.c === 2 ? " (تنبيه)" : "") : "" }).filter(Boolean).join("، ") : "") }).join("\n")
+      }
+      function gamesTxt(d) { return d.games.map(function (g) { return "• " + g.name + ": " + AR(g.ok) + " صحيحة" + (g.bad ? "، " + AR(g.bad) + " خاطئة" : "") + (g.help ? "، " + AR(g.help) + " بمساعدة" : "") + " من " + AR(g.q) + " (نسبة النجاح " + AR(g.pct) + "٪)" }).join("\n") }
+
+      /* ---------- حلقات اليوم + حالة كل تقرير ---------- */
+      function items() {
+        var day = todayStr(), now = Date.now(), out = [], seen = {};
+        function mk(g, r, key) {
+          var t = g ? (gTime(g, day) || "") : "", dur = (r && (r.dur || r.gd)) || (g && g.dur) || 30, rows = [], ids = [];
+          (g ? g.students : []).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id) });
+          Object.keys((r && r.st) || {}).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id) });
+          var end = t ? new Date(day + "T" + t + ":00").getTime() + dur * 60000 : null;
+          ids.forEach(function (sid) {
+            var st = stuById(sid), v = (r && r.st && r.st[sid]) || "", sn = r && r.sn && r.sn[sid];
+            if (!st && !v) return; if (st && !v && isOff(st, day)) return;
+            var k = key + "|" + sid, sd = sentAt(k), ended = end != null && now >= end, s = sd ? "sent" : ended ? "late" : v ? "unsent" : "upcoming";
+            rows.push({ k: k, sid: sid, name: st ? st.name : (sn && sn.n) || "طالب", phone: (st && st.phone) || "", v: v, sent: sd, status: s })
+          });
+          if (rows.length) out.push({ key: key, g: g, r: r, day: day, t: t, dur: dur, title: (r && r.gn) || (g ? gTitle(g) : "حصة"), rows: rows })
+        }
+        occRaw(day).forEach(function (g) { var key = akey(g, day); seen[key] = 1; mk(g, db.attendance[key] || null, key) });
+        Object.keys(db.attendance).forEach(function (k) { var r = db.attendance[k]; if (!r || r.day !== day || seen[k]) return; mk(db.groups.filter(function (q) { return q.id === r.g })[0] || null, r, k) });
+        return out.sort(function (a, b) { return (a.t || "99").localeCompare(b.t || "99") })
+      }
+      function findRow(k) { var I = items(); for (var i = 0; i < I.length; i++) for (var j = 0; j < I[i].rows.length; j++) if (I[i].rows[j].k === k) return { it: I[i], row: I[i].rows[j] }; return null }
+      function fdl(d, o) { return pd(d).toLocaleDateString("ar-EG", o) }
+
+      /* ---------- كائن التقرير (مصدر واحد للتصميم وللنص) ---------- */
+      function build(o) {
+        var it = o.it, row = o.row, e = sesGet(row.k), id = X.ident(), v = row.v, r = it.r, mist = mistakes(row.sid, it.day);
+        return {
+          key: row.k, sid: row.sid, day: it.day, v: v, hasAtt: !!v, test: false,
+          studentName: row.name, academyName: id.name, tagline: id.tag, logo: id.logo, teacherName: db.settings.name || "",
+          dateLabel: fdl(it.day, { weekday: "long", day: "numeric", month: "long", year: "numeric" }), timeLabel: it.t ? tmFmt(it.day, it.t) : "",
+          durLabel: v === "p" ? AR(it.dur) + " دقيقة" : "", statusLabel: ST[v] || "",
+          study: e.study || "", review: e.review || "", note: e.note || (r && r.note) || "", hw: e.hw || "", ev: e.ev || "",
+          msg: e.msg || (v ? MS[v] : ""), mist: v === "p" ? mist : { cur: [], count: 0, prev: 0, top: [] }, games: v === "p" ? gamesOf(row.sid, it.day) : [], txtOverride: e.txt || ""
+        }
+      }
+      function testData() {
+        return {
+          key: "test", sid: "", day: todayStr(), v: "p", hasAtt: true, test: true, studentName: "طالب تجريبي", academyName: X.ident().name, tagline: X.ident().tag, logo: X.ident().logo, teacherName: db.settings.name || "المعلم (تجريبي)",
+          dateLabel: fdl(todayStr(), { weekday: "long", day: "numeric", month: "long", year: "numeric" }), timeLabel: tmFmt(todayStr(), "17:00"), durLabel: AR(30) + " دقيقة", statusLabel: "حضر",
+          study: "سورة الملك من الآية ١ إلى ٥ (بيانات اختبار)", review: "سورة الإخلاص", note: "قراءة جيدة مع الحاجة إلى مراجعة المدود.", hw: "حفظ الآيات ٦ إلى ١٠", ev: "جيد جدًا", msg: MS.p,
+          mist: { cur: [{ s: 67, a: 3, w: 2, c: 1, t: "طِبَاقًا" }, { s: 67, a: 4, w: 5, c: 2, t: "خَاسِئًا" }], count: 2, prev: 4, top: ["البقرة"] },
+          games: [{ name: "لعبة مراجعة أسماء السور", ok: 8, help: 0, bad: 2, q: 10, pct: 80 }], txtOverride: ""
+        }
+      }
+
+      /* ---------- محرك الـTemplate: استبدال محلي فقط، بلا AI وبلا بيانات وهمية ---------- */
+      function vals(d) {
+        return {
+          "اسم_الطالب": d.studentName, "اسم_الأكاديمية": d.academyName, "اسم_المعلم": d.teacherName, "التاريخ": d.dateLabel, "موعد_الحصة": d.timeLabel, "مدة_الحصة": d.durLabel, "حالة_الحضور": d.statusLabel,
+          "محتوى_الحصة": d.study, "أخطاء_المصحف": mistTxt(d), "عدد_الأخطاء": d.mist.count ? AR(d.mist.count) : "", "المراجعة": d.review, "نتائج_الألعاب": gamesTxt(d),
+          "ملاحظات_المعلم": d.note, "الواجب_القادم": d.hw, "التقييم": d.ev, "الرسالة_الختامية": d.msg
+        }
+      }
+      /* سطر فيه متغيّرات كلها فاضية يُحذف بالكامل؛ متغيّر غير معروف يُعامل كفاضي (لا يظهر نصه) */
+      function fill(tpl, V) {
+        var out = [], pend = null;
+        function flush() { if (pend != null) { out.push(pend); pend = null } }
+        String(tpl || "").split("\n").forEach(function (l) {
+          var has = 0, any = 0, miss = 0;
+          var s = l.replace(/\{([^{}\n]+)\}/g, function (m, k) { has = 1; var v = V[k.trim()]; if (v != null && String(v).trim() !== "") { any = 1; return String(v) } miss = 1; return "" });
+          if (has && !any) return;                                   /* كل متغيّرات السطر فاضية → يُحذف السطر (والعنوان المعلَّق فوقه يبقى معلَّقًا) */
+          if (miss) s = s.replace(/\s*[—–\-:：]\s*$/, "");
+          s = s.replace(/[ \t]+$/, "");
+          if (!has && /[:：]\s*$/.test(s)) { flush(); pend = s; return }   /* عنوان ثابت ينتهي بنقطتين: لا يظهر إلا لو تحته محتوى */
+          if (!s.trim()) { pend = null; out.push(s); return }              /* سطر فاضي بعد عنوان معلَّق → العنوان بلا محتوى فيُحذف */
+          flush(); out.push(s)
+        });
+        return out.join("\n").replace(/\n{3,}/g, "\n\n").trim()
+      }
+      function unknownVars(tpl) { var u = [], m, re = /\{([^{}\n]+)\}/g; while ((m = re.exec(tpl))) { var k = m[1].trim(); if (VNAMES.indexOf(k) < 0 && u.indexOf(k) < 0) u.push(k) } return u }
+      function reportText(d) { return d.txtOverride || fill(tplSaved() || DEF_TPL, vals(d)) }
+
+      /* ---------- التصميم البصري اليومي (HTML + CSS + SVG، نفس هوية «زمردي») ---------- */
+      function box(i, t, inner, cls) { return '<div class="dz-sec' + (cls ? " " + cls : "") + '">' + X.head(i, t) + '<div class="dz-box">' + inner + '</div></div>' }
+      function html(d, u) {
+        var h = '<div class="dz-page" dir="rtl"><div class="dz-fr"></div>' + X.corner(u) + X.sky() + '<div class="dz-in">';
+        h += '<div class="dz-brand"><div class="dz-bt"><b>' + esc(d.academyName) + '</b>' + (d.tagline ? '<span>' + esc(d.tagline) + '</span>' : "") + '</div>' + (d.logo ? '<img class="dz-logo" src="' + d.logo + '" alt="">' : X.logo()) + '</div>';
+        h += '<div class="dz-top"><div class="dz-infocol"><div class="dz-rib">' + X.diamond() + '<span>تقرير الحصة اليومي</span>' + X.diamond() + '</div>'
+          + X.irow("user", "الطالب", esc(d.studentName)) + (d.teacherName ? X.irow("teacher", "المعلم", esc(d.teacherName)) : "") + X.irow("cal", "التاريخ", esc(d.dateLabel))
+          + (d.timeLabel ? X.irow("clock", "موعد الحصة", esc(d.timeLabel)) : "") + (d.durLabel ? X.irow("clock", "مدة الحصة", esc(d.durLabel)) : "")
+          + '</div><div class="dz-arch">' + X.arch(u) + '</div></div>';
+        if (d.v) {
+          var C = d.v === "p" ? ["calOk", "#1B7A55", "#EAF4EC", "#BBD9C4"] : d.v === "a" ? ["calX", "#C0392B", "#FCEDEA", "#EBC1BB"] : ["clock", "#C58A0B", "#FCF4DC", "#E6D08F"];
+          h += box("calOk", "حالة الحضور", '<div class="dq-stat" style="background:' + C[2] + ';border-color:' + C[3] + ';color:' + C[1] + '">' + X.ic(C[0], C[1], 34) + '<span>' + esc(d.statusLabel) + '</span></div>')
+        }
+        if (d.v === "p") {
+          var c1 = "";
+          if (d.study) c1 += '<div class="dz-pr"><span class="dz-pl">ما تمت دراسته:</span></div>' + X.ul(X.lines(d.study));
+          if (d.review) c1 += '<div class="dz-pr"><span class="dz-pl">المراجعة:</span></div>' + X.ul(X.lines(d.review));
+          if (d.ev) c1 += '<div class="dz-pr"><span class="dz-pi">' + X.ic("star", "#0B5A44", 17) + '</span><span class="dz-pl">التقدير:</span><span class="dz-pv dz-ev">' + esc(d.ev) + '</span></div>';
+          if (c1) h += box("book", "محتوى الحصة", c1);
+          var mh = "";
+          if (d.mist.count) {
+            var by = {}, ord = []; d.mist.cur.forEach(function (x) { var k = x.s + ":" + x.a; if (!by[k]) { by[k] = []; ord.push(k) } by[k].push(x) });
+            mh += ord.map(function (k) { var a = by[k], p = k.split(":"); return '<div class="dq-ay"><span class="dq-sr">سورة ' + esc(SN[p[0] - 1]) + ' – الآية ' + AR(p[1]) + '</span><span class="dq-ws">' + a.map(function (x) { return x.t ? '<i class="dq-w' + (x.c === 2 ? " t" : "") + '">' + esc(x.t) + (x.c === 2 ? "<small>تنبيه</small>" : "") + '</i>' : "" }).join("") + '</span></div>' }).join("");
+            mh += '<div class="dq-cnt">عدد المواضع المسجّلة في هذه الحصة: ' + AR(d.mist.count) + '</div>'
+          }
+          if (d.mist.prev) mh += '<div class="dq-prev">مواضع سابقة ما زالت تحتاج إلى مراجعة: ' + AR(d.mist.prev) + (d.mist.top.length ? " (أكثرها في " + esc(d.mist.top.join("، ")) + ")" : "") + '</div>';
+          if (mh) h += box("refresh", d.mist.count ? "مواضع تحتاج إلى مراجعة" : "مراجعة مواضع سابقة", mh);
+          if (d.games.length) h += box("star", "المراجعة التفاعلية", d.games.map(function (g) { return '<div class="dq-gm"><b>' + esc(g.name) + '</b><span>' + AR(g.ok) + ' صحيحة' + (g.bad ? "، " + AR(g.bad) + " خاطئة" : "") + (g.help ? "، " + AR(g.help) + " بمساعدة" : "") + ' من ' + AR(g.q) + '</span><span class="dq-pc">' + AR(g.pct) + '٪</span></div>' }).join(""))
+        }
+        if (d.note) h += box("note", "ملاحظات المعلم", X.ul(X.lines(d.note)));
+        if (d.v === "p" && d.hw) h += box("pen", "الواجب للحصة القادمة", X.ul(X.lines(d.hw)), "dz-hw");
+        if (d.msg) h += '<div class="dz-msg">' + X.trophy(u) + '<p>' + X.lines(d.msg).map(esc).join("<br>") + '</p>' + X.diamond() + '</div>';
+        h += '<div class="dz-ft">صدر بتاريخ ' + esc(fdl(todayStr(), { day: "numeric", month: "long", year: "numeric" })) + '</div></div></div>';
+        return h
+      }
+      function repHtml(d) { return html(d, "q" + (++UID)) }
+      function fit() {
+        var bx = document.getElementById("qa-stage"), sc = document.getElementById("qa-sc"); if (!bx || !sc || !sc.firstChild) return;
+        var w = bx.clientWidth || 794, s = Math.min(1, w / 794); sc.style.transformOrigin = "top right"; sc.style.transform = "scale(" + s + ")"; sc.style.right = w > 794 ? (w - 794) / 2 + "px" : "0"; bx.style.height = Math.ceil(sc.firstChild.offsetHeight * s) + "px"
+      }
+      window.addEventListener("resize", fit);
+      function paintPv() {
+        var sc = document.getElementById("qa-sc"); if (!sc || !AQ.sel) return; var o = findRow(AQ.sel); if (!o) { sc.innerHTML = ""; return }
+        sc.innerHTML = repHtml(build(o)); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit); fit()
+      }
+      function h2c(cb) { if (window.html2canvas) return cb(); var s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"; s.onload = cb; s.onerror = function () { toast("تعذّر تحميل أداة الصورة، تأكد من الإنترنت") }; document.head.appendChild(s) }
+      function pngOut(d) {
+        toast("جاري تجهيز الصورة…");
+        h2c(function () {
+          var bx = document.createElement("div"); bx.style.cssText = "position:fixed;left:-10000px;top:0;width:794px"; bx.innerHTML = repHtml(d); document.body.appendChild(bx);
+          (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { return html2canvas(bx.firstChild, { scale: 3, backgroundColor: "#ffffff", useCORS: true, logging: false }) }).then(function (cv) {
+            bx.remove(); cv.toBlob(function (bl) {
+              var nm = ("تقرير-حصة-" + d.studentName + "-" + d.day).replace(/[\\\/:*?"<>|\s]+/g, "-") + ".png", f = new File([bl], nm, { type: "image/png" });
+              if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f] }).catch(function () { });
+              else { var a = document.createElement("a"); a.href = URL.createObjectURL(bl); a.download = nm; document.body.appendChild(a); a.click(); a.remove(); toast("تم حفظ الصورة ✓") }
+            }, "image/png")
+          }).catch(function () { bx.remove(); toast("تعذّر إنشاء الصورة") })
+        })
+      }
+
+      /* ---------- الواجهة ---------- */
+      var BL = { sent: "✓ تم الإرسال", late: "⏰ متأخر", unsent: "⏳ لم يتم الإرسال", upcoming: "🕐 لم يحن موعدها" };
+      function chip(on, a, l, n) { return '<button class="ht' + (on ? " on" : "") + '" ' + a + '>' + l + (n != null ? ' <em style="background:var(--acc)">' + AR(n) + '</em>' : "") + '</button>' }
+      function tabsBar() {
+        var tabs = [["quick", "⚡ بعد الحصة"], ["stu", "👨‍👩‍👦 تقرير الطالب"], ["acad", "🏢 كشف الأكاديمية"], ["mon", "📈 تقريري الشهري"], ["tpl", "🎨 القالب"], ["dz", "🕌 التقرير المصمّم"]];
+        return '<div class="htabs" style="position:static">' + tabs.map(function (t) { var lk = LOCKED[t[0]]; return '<button class="ht' + (T.tab === t[0] ? " on" : "") + (lk ? " qa-lk" : "") + '" data-r3="tab" data-v="' + t[0] + '">' + (lk ? "🔒 " : "") + t[1] + '</button>' }).join("") + '</div>'
+      }
+      function lockedView() {
+        return '<div class="card empty qa-lock"><div style="font-size:44px">🚧</div><h3>تحت التطوير</h3><p>هذا القسم متوقف مؤقتًا إلى أن نكمل تطوير «بعد الحصة». بياناته وكوده محفوظان كما هما ولم يُحذف منهما شيء.</p><div class="acts" style="justify-content:center"><button class="p" data-r3="tab" data-v="quick">⚡ الرجوع إلى بعد الحصة</button></div></div>'
+      }
+      function rowHtml(it, x) {
+        var e = sesGet(x.k), a = ' data-k="' + esc(x.k) + '"', sd = x.sent;
+        return '<div class="qa-row"><div class="qa-r1"><b>' + esc(x.name) + '</b>' + (x.v ? '<span class="qa-b ' + (x.v === "p" ? "sent" : "unsent") + '">' + ST[x.v] + '</span>' : '<span class="qa-b upcoming">لم يُسجَّل حضور</span>')
+          + '<span class="qa-b ' + x.status + '">' + BL[x.status] + '</span></div>'
+          + '<div class="mute" style="font-size:12px;margin-top:3px">' + (sd ? "أُرسل " + new Date(sd).toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : x.phone ? "رقم ولي الأمر مسجّل" : "لا يوجد رقم ولي أمر — هتختار جهة الاتصال بنفسك") + (e.txt ? " · نص معدَّل يدويًا" : "") + (x.status === "late" && !x.v ? " · سجّل الحضور أولًا من صفحة الحلقات" : "") + '</div>'
+          + '<div class="qa-acts"><button class="p" data-qa="wa"' + a + '>📲 WhatsApp</button><button data-qa="cp"' + a + '>📋 نسخ</button><button data-qa="ed"' + a + '>✏️ تعديل</button>'
+          + '<button data-qa="pv"' + a + '>' + (AQ.sel === x.k ? "🙈 إخفاء المعاينة" : "👁 معاينة") + '</button>'
+          + (sd ? '<button data-qa="un"' + a + '>↩ تعليم كغير مرسل</button>' : '<button data-qa="sn"' + a + '>✅ تم الإرسال</button>') + '</div></div>'
+          + (AQ.sel === x.k ? '<div class="qa-pv"><div class="acts" style="margin:0 0 8px"><button class="p" data-qa="png"' + a + '>🖼 حفظ كصورة PNG</button></div><div class="qa-stage" id="qa-stage"><div class="qa-sc" id="qa-sc"></div></div></div>' : "")
+      }
+      function listView() {
+        var I = items(), n = { unsent: 0, late: 0, sent: 0 }, tot = 0;
+        I.forEach(function (it) { it.rows.forEach(function (x) { tot++; if (x.status === "sent") n.sent++; else if (x.status === "late") { n.late++; n.unsent++ } else if (x.status === "unsent") n.unsent++ }) });
+        function okF(x) { return !AQ.f || (AQ.f === "sent" ? x.status === "sent" : AQ.f === "late" ? x.status === "late" : (x.status === "late" || x.status === "unsent")) }
+        var h = '<div class="hero hh"><h2>⚡ بعد الحصة — حلقات اليوم</h2><div class="mute">' + esc(fdl(todayStr(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })) + ' · ' + AR(tot) + ' تقرير</div></div>'
+          + '<div class="htabs" style="position:static">' + chip(AQ.f === "unsent", 'data-qa="flt" data-v="unsent"', "لم يتم الإرسال", n.unsent) + chip(AQ.f === "late", 'data-qa="flt" data-v="late"', "المتأخر", n.late) + chip(AQ.f === "sent", 'data-qa="flt" data-v="sent"', "تم الإرسال", n.sent) + '</div>';
+        var shown = 0;
+        I.forEach(function (it) {
+          var rs = it.rows.filter(okF); if (!rs.length) return; shown++;
+          h += '<div class="card qa-ses"><div class="qa-sh"><div class="si"><b>' + (it.t ? tmFmt(it.day, it.t) + " · " : "") + esc(it.title) + '</b><div class="mute">' + AR(it.rows.length) + ' طالب · ' + AR(it.dur) + ' دقيقة</div></div></div>' + rs.map(function (x) { return rowHtml(it, x) }).join("") + '</div>'
+        });
+        if (!shown) h += '<div class="card empty"><div style="font-size:42px">' + (tot ? "✅" : "📭") + '</div><p>' + (tot ? "مفيش تقارير في الفلتر ده." : "مفيش حلقات مجدولة النهارده.") + '</p></div>';
+        return h
+      }
+      function curItemForPv() {
+        var I = items(), pick = null; if (AQ.sel) pick = findRow(AQ.sel);
+        if (!pick) I.forEach(function (it) { it.rows.forEach(function (x) { if (!pick && x.v) pick = { it: it, row: x } }) }); return pick
+      }
+      function pvBody() {
+        var tpl = tplNow(), d, lab, o = AQ.pv === "real" ? curItemForPv() : null;
+        if (o) { d = build(o); lab = "بيانات فعلية: " + d.studentName + " — " + (o.it.t ? tmFmt(o.it.day, o.it.t) + " " : "") + o.it.title } else { d = testData(); lab = "بيانات اختبار (غير حقيقية)" }
+        var un = unknownVars(tpl);
+        return '<div class="mute" style="font-size:12px">المعاينة تعمل على: ' + esc(lab) + (AQ.draft != null ? " — بالنص الحالي قبل الحفظ" : "") + '</div><div class="qa-out">' + esc(fill(tpl, vals(d))) + '</div>'
+          + (un.length ? '<div class="qa-warn">⚠ متغيّرات غير معروفة (ستُحذف من التقرير): ' + un.map(function (u) { return "{" + esc(u) + "}" }).join(" ") + '</div>' : "")
+      }
+      function editorView() {
+        var dirty = AQ.draft != null && AQ.draft !== (tplSaved() || DEF_TPL);
+        return '<details class="card qa-ed"' + (AQ.edOpen ? " open" : "") + ' data-qa-det="1"><summary><b>⚙ محرر نص التقرير (Template)</b> <span class="mute" style="font-size:12px">— نص الرسالة منفصل تمامًا عن التصميم البصري</span></summary>'
+          + '<div class="mute" style="font-size:12.5px;margin:8px 0">الـAI يُستخدم خارج الموقع فقط عند تحويل صياغتك إلى Template. بعد حفظ الـTemplate يستبدل الموقع المتغيّرات محليًا. الـTemplate الافتراضي الحالي مؤقت ويعتمد صياغة الرسالة الحالية، وتقدر تستبدله بصياغتك.</div>'
+          + '<h4>١) نص التقرير الأساسي</h4><div class="mute" style="font-size:12px">اكتب أو الصق صياغتك المعتمدة (يُحفظ تلقائيًا ولا يؤثر على التقارير).</div><textarea data-qin="base" placeholder="السلام عليكم ورحمة الله وبركاته…">' + esc(cfg().base || "") + '</textarea>'
+          + '<h4 style="margin-top:14px">٢) تعليمات الذكاء الاصطناعي (Prompt)</h4><textarea data-qin="prompt">' + esc(promptNow()) + '</textarea><div class="qa-chips"><button data-qa="cpp">📋 نسخ الـPrompt</button><button class="p" data-qa="cpai">📋 نسخ للإرسال إلى AI (Prompt + المتغيرات + النص الأساسي)</button><button data-qa="rstp">↺ الـPrompt الافتراضي</button></div>'
+          + '<h4 style="margin-top:14px">٣) المتغيرات المتاحة</h4><div class="mute" style="font-size:12px">اضغط على المتغيّر لإدراجه في الـTemplate عند المؤشر. اجعل المتغيّر في نفس سطر عنوانه، فالسطر الذي كل متغيّراته فاضية يُحذف تلقائيًا.</div>'
+          + VARS.map(function (g) { return '<div style="margin-top:8px"><b style="font-size:13px">' + g[0] + '</b><div class="qa-vg">' + g[1].map(function (v) { return '<div><code data-qa="ins" data-v="{' + v[0] + '}">{' + v[0] + '}</code><div class="mute">' + v[1] + '</div></div>' }).join("") + '</div></div>' }).join("")
+          + '<h4 style="margin-top:14px">٤) الـTemplate النهائي ' + (dirty ? '<span class="qa-dirty">● تعديلات غير محفوظة</span>' : '<span class="mute" style="font-size:12px">' + (tplSaved() ? "(مخصّص ومحفوظ)" : "(الافتراضي)") + '</span>') + '</h4>'
+          + '<textarea id="qa-final" data-qin="final">' + esc(tplNow()) + '</textarea><div class="qa-chips"><button class="p" data-qa="tsave">💾 حفظ واعتماد</button><button data-qa="tdisc">↩ تجاهل التعديلات</button><button data-qa="trst">↺ تحميل الافتراضي</button></div>'
+          + '<div class="qa-chips">' + chip(AQ.pv === "real", 'data-qa="pvm" data-v="real"', "معاينة ببيانات فعلية") + chip(AQ.pv === "test", 'data-qa="pvm" data-v="test"', "معاينة ببيانات اختبار") + '</div><div id="qa-tpv">' + pvBody() + '</div></details>'
+      }
+      function quickView() { return listView() + editorView() }
+
+      /* ---------- ربط بصفحة التقارير: التابات الأخرى تُقفل مؤقتًا بدون حذف كودها ---------- */
+      reportsV = function () {
+        setTimeout(function () { if (T.tab === "quick" && AQ.sel) paintPv() }, 0);
+        return tabsBar() + (T.tab === "quick" ? quickView() : lockedView())
+      };
+
+      /* ---------- حوار التعديل ---------- */
+      function dlg(o) {
+        var d = build(o), e = sesGet(o.row.k), el = document.createElement("div"); el.className = "dlg"; el.setAttribute("data-qd-k", o.row.k);
+        function ta(f, l, ph) { return '<label>' + l + '<textarea data-qf="' + f + '" rows="2" placeholder="' + esc(ph || "") + '">' + esc(e[f] || "") + '</textarea></label>' }
+        el.innerHTML = '<div class="fm" style="max-height:90vh;overflow:auto"><h2>تعديل تقرير ' + esc(o.row.name) + '</h2><div class="mute" style="font-size:12px">التعديل هنا يخص هذا التقرير فقط ولا يغيّر سجل الحضور ولا بيانات الطالب أو الحصة.</div><div class="qa-fm">'
+          + ta("study", "ما تمت دراسته") + ta("review", "المراجعة") + ta("note", "ملاحظات المعلم", d.note && !e.note ? "من سجل الحضور: " + d.note : "") + ta("hw", "الواجب القادم")
+          + '<label>التقييم<select data-qf="ev"><option value=""></option>' + EVS.map(function (x) { return '<option' + (e.ev === x ? " selected" : "") + '>' + x + '</option>' }).join("") + '</select></label>' + ta("msg", "الرسالة الختامية (فاضية = الرسالة التلقائية حسب الحضور)")
+          + '<label>نص الرسالة لهذا التقرير فقط (اختياري — فاضي = يُولَّد من الـTemplate)<textarea data-qf="txt" rows="6">' + esc(e.txt || "") + '</textarea></label></div>'
+          + '<div class="row"><button data-qd="x">إلغاء</button><button data-qd="fill">📄 تحميل النص الحالي للتعديل</button><button class="p" data-qd="ok">💾 حفظ</button></div></div>';
+        el.addEventListener("click", function (ev) {
+          var t = ev.target, a = t.getAttribute && t.getAttribute("data-qd");
+          if (t === el || a === "x") { el.remove(); return }
+          if (a === "fill") { var cur = {}; el.querySelectorAll("[data-qf]").forEach(function (i) { cur[i.getAttribute("data-qf")] = i.value }); var o2 = findRow(o.row.k); var dd = build(o2);["study", "review", "note", "hw", "ev", "msg"].forEach(function (f) { dd[f] = cur[f] != null && cur[f].trim() ? cur[f] : (f === "note" ? dd.note : f === "msg" ? dd.msg : "") }); dd.txtOverride = ""; el.querySelector('[data-qf="txt"]').value = fill(tplSaved() || DEF_TPL, vals(dd)); return }
+          if (a === "ok") { var n = {}; el.querySelectorAll("[data-qf]").forEach(function (i) { n[i.getAttribute("data-qf")] = i.value.trim() }); sesPut(o.row.k, n); el.remove(); toast("تم الحفظ ✓"); render() }
+        });
+        document.body.appendChild(el)
+      }
+
+      /* ---------- الأحداث ---------- */
+      function waUrl(t, ph) { return (normPh(ph) ? "https://wa.me/" + normPh(ph) + "?text=" : "https://api.whatsapp.com/send?text=") + encodeURIComponent(t) }
+      function aiPack() {
+        return promptNow() + "\n\n———\nالمتغيرات المتاحة (استخدمها بنفس الأسماء تمامًا بين أقواس {}):\n" + VARS.map(function (g) { return g[1].map(function (v) { return "{" + v[0] + "}: " + v[1] }).join("\n") }).join("\n") + "\n\n———\nنص التقرير:\n" + (cfg().base || "")
+      }
+      function refreshTpv() { var el = document.getElementById("qa-tpv"); if (el) el.innerHTML = pvBody() }
+      document.addEventListener("input", function (ev) {
+        var t = ev.target, f = t.getAttribute && t.getAttribute("data-qin"); if (!f || t.closest(".dlg")) return;
+        if (f === "final") { AQ.draft = t.value; refreshTpv(); var det = t.closest("details"), h = det && det.querySelector("h4:nth-of-type(4)"); if (h) { var dirty = AQ.draft !== (tplSaved() || DEF_TPL); h.innerHTML = "٤) الـTemplate النهائي " + (dirty ? '<span class="qa-dirty">● تعديلات غير محفوظة</span>' : "") } }
+        else if (f === "base") { wr().base = t.value; save() } else if (f === "prompt") { wr().prompt = t.value; save() }
+      });
+      document.addEventListener("toggle", function (ev) { var t = ev.target; if (t.getAttribute && t.getAttribute("data-qa-det")) AQ.edOpen = t.open }, true);
+      document.addEventListener("click", function (ev) {
+        var b = ev.target.closest && ev.target.closest("[data-qa]"); if (!b || b.closest(".dlg")) return;
+        var a = b.getAttribute("data-qa"), k = b.getAttribute("data-k"), v = b.getAttribute("data-v"), o;
+        if (a === "flt") { AQ.f = AQ.f === v ? "" : v; render(); return }
+        if (a === "pvm") { AQ.pv = v; AQ.edOpen = true; render(); return }
+        if (a === "ins") { var ta = document.getElementById("qa-final"); if (!ta) return; var p0 = ta.selectionStart == null ? ta.value.length : ta.selectionStart, p1 = ta.selectionEnd == null ? p0 : ta.selectionEnd; ta.value = ta.value.slice(0, p0) + v + ta.value.slice(p1); AQ.draft = ta.value; ta.focus(); ta.selectionStart = ta.selectionEnd = p0 + v.length; ta.dispatchEvent(new Event("input", { bubbles: true })); return }
+        if (a === "cpp") { copyTxt(promptNow()); return } if (a === "cpai") { copyTxt(aiPack()); return }
+        if (a === "rstp") { delete wr().prompt; save(); AQ.edOpen = true; render(); return }
+        if (a === "tsave") { var tx = AQ.draft != null ? AQ.draft : tplNow(); if (!String(tx).trim()) { toast("الـTemplate فاضي"); return } if (tx === DEF_TPL) delete wr().final; else wr().final = tx; AQ.draft = null; save(); AQ.edOpen = true; toast("تم حفظ واعتماد الـTemplate ✓"); render(); return }
+        if (a === "tdisc") { AQ.draft = null; AQ.edOpen = true; render(); return } if (a === "trst") { AQ.draft = DEF_TPL; AQ.edOpen = true; render(); return }
+        if (!k) return; o = findRow(k); if (!o) { toast("الحصة دي مش موجودة النهارده"); render(); return }
+        if (a === "pv") { AQ.sel = AQ.sel === k ? "" : k; render(); return }
+        if (a === "ed") { dlg(o); return }
+        if (a === "sn") { sentPut(k, 1); render(); return } if (a === "un") { sentPut(k, 0); render(); return }
+        var d = build(o);
+        if ((a === "wa" || a === "cp" || a === "png") && !d.hasAtt) { toast("سجّل حضور الطالب أولًا من صفحة الحلقات"); return }
+        if (a === "png") { pngOut(d); return }
+        var tx2 = reportText(d);
+        if (a === "cp") { copyTxt(tx2); toast("تم النسخ — عيّن «تم الإرسال» بعد ما تبعت") }
+        else if (a === "wa") { window.open(waUrl(tx2, o.row.phone), "_blank") || copyTxt(tx2); toast("بعد ما تبعت اضغط «تم الإرسال»") }
+      });
+      /* زر «جهّز تقارير الطلاب» في كارت الحلقة: يفتح تاب بعد الحصة */
+      document.addEventListener("click", function (ev) { if (ev.target.closest && ev.target.closest("[data-rpgo]")) T.tab = "quick" }, true);
+      /* تحديث تلقائي كل دقيقة عشان حالة «متأخر» تتحدّث (بدون مقاطعة الكتابة) */
+      setInterval(function () {
+        if (view !== "reports" || T.tab !== "quick" || document.querySelector(".dlg")) return;
+        var ae = document.activeElement; if (ae && /^(TEXTAREA|INPUT|SELECT)$/.test(ae.tagName)) return; render()
+      }, 60000);
+      window.rptQuick = { items: items, build: build, fill: fill, vals: vals, mistakes: mistakes, gamesOf: gamesOf, unknownVars: unknownVars, DEF_TPL: DEF_TPL };
+      nav(); if (view === "reports") render()
     })();
   </script>
 </body>
