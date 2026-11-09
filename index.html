@@ -14806,7 +14806,12 @@
   </script>
   <script>
     /* إعادة رسم الصفحة الحالية بعد ما كل السكربتات تتحمّل، عشان «اليوم» تظهر بالتصميم الجديد من أول مرة */
-    (function () { try { if (typeof route === "function") route(); else if (typeof render === "function") render(); } catch (e) { } })();
+    (function () {
+      function fix() { try { if (typeof view !== "undefined" && view === "home" && !document.querySelector("#v .hh") && !document.querySelector(".dlg")) render(); } catch (e) { } }
+      try { if (typeof route === "function") route(); else if (typeof render === "function") render(); } catch (e) { }
+      window.addEventListener("load", fix); window.addEventListener("pageshow", fix);
+      setTimeout(fix, 600); setTimeout(fix, 2000); setTimeout(fix, 5000);
+    })();
   </script>
 </body>
 
