@@ -14514,22 +14514,40 @@
 
       /* ---------- ختم تاريخ علامات المصحف (يُستدعى من المصحف عند وضع/إزالة علامة) ---------- */
       window.rptMkStamp = function (sid, key, val) {
-        if (!sid) return; var m = db.settings.mkAt = db.settings.mkAt || {}, o = m[sid] = m[sid] || {};
-        if (val) o[key] = Date.now(); else { delete o[key]; if (!Object.keys(o).length) delete m[sid] }
+        if (!sid) return; var m = db.settings.mkAt = db.settings.mkAt || {}, o = m[sid] = m[sid] || {}, q = db.settings.mkSes = db.settings.mkSes || {}, qs = q[sid] = q[sid] || {};
+        if (val) { var now = Date.now(), ak = null; o[key] = now; try { ak = activeKey(sid, now) } catch (e) { } if (ak) qs[key] = ak; else delete qs[key] }
+        else { delete o[key]; delete qs[key]; if (!Object.keys(o).length) delete m[sid] }
+        if (!Object.keys(qs).length) delete q[sid]
       };
       function dayOf(ts) { var d = new Date(ts); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) }
 
       /* ---------- استخراج البيانات الفعلية ---------- */
-      function mistakes(sid, day) {
-        var m = (db.marks && db.marks[sid]) || {}, at = (db.settings.mkAt && db.settings.mkAt[sid]) || {}, cur = [], prev = 0, ps = {};
+      /* جلسات الطالب في يوم معيّن (من جدول الحلقات + سجلات الحضور) */
+      function sessOf(sid, day) {
+        var out = [], seen = {};
+        function add(g, key) { var t = g ? (gTime(g, day) || "") : ""; seen[key] = 1; out.push({ key: key, t: t, st: t ? new Date(day + "T" + t + ":00").getTime() : null }) }
+        occRaw(day).forEach(function (g) { if (g.students.indexOf(sid) > -1) add(g, akey(g, day)) });
+        Object.keys(db.attendance).forEach(function (k) { var r = db.attendance[k]; if (!r || r.day !== day || seen[k] || !r.st || r.st[sid] === undefined) return; add(db.groups.filter(function (q) { return q.id === r.g })[0] || null, k) });
+        return out
+      }
+      /* الحصة «الجارية» لحظة وضع العلامة: حصة واحدة في اليوم → هي؛ أكثر → آخر حصة بدأت، وإلا أقرب حصة قادمة */
+      function activeKey(sid, ts) {
+        var S = sessOf(sid, dayOf(ts)); if (!S.length) return null; if (S.length === 1) return S[0].key;
+        var st = S.filter(function (x) { return x.st != null && x.st <= ts }).sort(function (a, b) { return b.st - a.st });
+        if (st.length) return st[0].key;
+        var up = S.filter(function (x) { return x.st != null }).sort(function (a, b) { return a.st - b.st }); return (up[0] || S[0]).key
+      }
+      function mistakes(sid, day, sk) {
+        var m = (db.marks && db.marks[sid]) || {}, at = (db.settings.mkAt && db.settings.mkAt[sid]) || {}, ses = (db.settings.mkSes && db.settings.mkSes[sid]) || {}, cur = [], prev = 0, ps = {}, amb = [], n = sk ? sessOf(sid, day).length : 0;
         Object.keys(m).forEach(function (k) {
-          var p = k.split(":"), s = +p[0], a = +p[1], w = +p[2], ts = at[k];
-          if (ts && dayOf(ts) === day) { var tx = ""; try { tx = wtxt(s, a, w) } catch (e) { } cur.push({ s: s, a: a, w: w, c: m[k], t: tx }) }
+          var p = k.split(":"), s = +p[0], a = +p[1], w = +p[2], ts = at[k], same = ts && dayOf(ts) === day, sv = ses[k], mine = false;
+          if (same) { if (sv) mine = !sk || sv === sk; else if (!sk || n <= 1) mine = true; else { amb.push(k); return } }
+          if (mine) { var tx = ""; try { tx = wtxt(s, a, w) } catch (e) { } cur.push({ s: s, a: a, w: w, c: m[k], t: tx }) }
           else { prev++; ps[s] = (ps[s] || 0) + 1 }
         });
         cur.sort(function (x, y) { return x.s - y.s || x.a - y.a || x.w - y.w });
         var top = Object.keys(ps).sort(function (x, y) { return ps[y] - ps[x] }).slice(0, 3).map(function (n) { return SN[n - 1] });
-        return { cur: cur, count: cur.length, prev: prev, top: top }
+        return { cur: cur, count: cur.length, prev: prev, top: top, amb: amb.length, ambKeys: amb }
       }
       function gamesOf(sid, day) {
         var g = (db.games && db.games[sid]) || {}, lo = new Date(day + "T00:00:00").getTime(), hi = lo + 864e5, by = {}, ord = [];
@@ -14570,14 +14588,14 @@
 
       /* ---------- كائن التقرير (مصدر واحد للتصميم وللنص) ---------- */
       function build(o) {
-        var it = o.it, row = o.row, e = sesGet(row.k), id = X.ident(), v = row.v, r = it.r, mist = mistakes(row.sid, it.day);
+        var it = o.it, row = o.row, e = sesGet(row.k), id = X.ident(), v = row.v, r = it.r, mist = mistakes(row.sid, it.day, it.key);
         return {
           key: row.k, sid: row.sid, day: it.day, v: v, hasAtt: !!v, test: false,
           studentName: row.name, academyName: id.name, tagline: id.tag, logo: id.logo, teacherName: db.settings.name || "",
           dateLabel: fdl(it.day, { weekday: "long", day: "numeric", month: "long", year: "numeric" }), timeLabel: it.t ? tmFmt(it.day, it.t) : "",
           durLabel: v === "p" ? AR(it.dur) + " دقيقة" : "", statusLabel: ST[v] || "",
           study: e.study || "", review: e.review || "", note: e.note || (r && r.note) || "", hw: e.hw || "", ev: e.ev || "",
-          msg: e.msg || (v ? MS[v] : ""), mist: v === "p" ? mist : { cur: [], count: 0, prev: 0, top: [] }, games: v === "p" ? gamesOf(row.sid, it.day) : [], txtOverride: e.txt || ""
+          msg: e.msg || (v ? MS[v] : ""), mist: v === "p" ? mist : { cur: [], count: 0, prev: 0, top: [], amb: 0, ambKeys: [] }, games: v === "p" ? gamesOf(row.sid, it.day) : [], txtOverride: e.txt || ""
         }
       }
       function testData() {
@@ -14604,7 +14622,7 @@
         function flush() { if (pend != null) { out.push(pend); pend = null } }
         String(tpl || "").split("\n").forEach(function (l) {
           var has = 0, any = 0, miss = 0;
-          var s = l.replace(/\{([^{}\n]+)\}/g, function (m, k) { has = 1; var v = V[k.trim()]; if (v != null && String(v).trim() !== "") { any = 1; return String(v) } miss = 1; return "" });
+          var s = l.replace(/\{([^{}\n]+)\}/g, function (m, k) { has = 1; var kk = k.trim(), v = Object.prototype.hasOwnProperty.call(V, kk) ? V[kk] : null; if (v != null && String(v).trim() !== "") { any = 1; return String(v) } miss = 1; return "" });
           if (has && !any) return;                                   /* كل متغيّرات السطر فاضية → يُحذف السطر (والعنوان المعلَّق فوقه يبقى معلَّقًا) */
           if (miss) s = s.replace(/\s*[—–\-:：]\s*$/, "");
           s = s.replace(/[ \t]+$/, "");
@@ -14615,7 +14633,7 @@
         return out.join("\n").replace(/\n{3,}/g, "\n\n").trim()
       }
       function unknownVars(tpl) { var u = [], m, re = /\{([^{}\n]+)\}/g; while ((m = re.exec(tpl))) { var k = m[1].trim(); if (VNAMES.indexOf(k) < 0 && u.indexOf(k) < 0) u.push(k) } return u }
-      function reportText(d) { return d.txtOverride || fill(tplSaved() || DEF_TPL, vals(d)) }
+      function reportText(d) { return d.txtOverride || fill(tplFinal(tplFor(d.key, d.sid)), vals(d)) }
 
       /* ---------- التصميم البصري اليومي (HTML + CSS + SVG، نفس هوية «زمردي») ---------- */
       function box(i, t, inner, cls) { return '<div class="dz-sec' + (cls ? " " + cls : "") + '">' + X.head(i, t) + '<div class="dz-box">' + inner + '</div></div>' }
@@ -14692,7 +14710,7 @@
         return '<div class="qa-row"><div class="qa-r1"><b>' + esc(x.name) + '</b>' + (x.v ? '<span class="qa-b ' + (x.v === "p" ? "sent" : "unsent") + '">' + ST[x.v] + '</span>' : '<span class="qa-b upcoming">لم يُسجَّل حضور</span>')
           + '<span class="qa-b ' + x.status + '">' + BL[x.status] + '</span></div>'
           + '<div class="mute" style="font-size:12px;margin-top:3px">' + (sd ? "أُرسل " + new Date(sd).toLocaleString("ar-EG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : x.phone ? "رقم ولي الأمر مسجّل" : "لا يوجد رقم ولي أمر — هتختار جهة الاتصال بنفسك") + (e.txt ? " · نص معدَّل يدويًا" : "") + (x.status === "late" && !x.v ? " · سجّل الحضور أولًا من صفحة الحلقات" : "") + '</div>'
-          + '<div class="qa-acts"><button class="p" data-qa="wa"' + a + '>📲 WhatsApp</button><button data-qa="cp"' + a + '>📋 نسخ</button><button data-qa="ed"' + a + '>✏️ تعديل</button>'
+          + tplSel(x) + '<div class="qa-acts"><button class="p" data-qa="wa"' + a + '>📲 WhatsApp</button><button data-qa="cp"' + a + '>📋 نسخ</button><button data-qa="ed"' + a + '>✏️ تعديل</button>'
           + '<button data-qa="pv"' + a + '>' + (AQ.sel === x.k ? "🙈 إخفاء المعاينة" : "👁 معاينة") + '</button>'
           + (sd ? '<button data-qa="un"' + a + '>↩ تعليم كغير مرسل</button>' : '<button data-qa="sn"' + a + '>✅ تم الإرسال</button>') + '</div></div>'
           + (AQ.sel === x.k ? '<div class="qa-pv"><div class="acts" style="margin:0 0 8px"><button class="p" data-qa="png"' + a + '>🖼 حفظ كصورة PNG</button></div><div class="qa-stage" id="qa-stage"><div class="qa-sc" id="qa-sc"></div></div></div>' : "")
@@ -14734,7 +14752,7 @@
           + '<textarea id="qa-final" data-qin="final">' + esc(tplNow()) + '</textarea><div class="qa-chips"><button class="p" data-qa="tsave">💾 حفظ واعتماد</button><button data-qa="tdisc">↩ تجاهل التعديلات</button><button data-qa="trst">↺ تحميل الافتراضي</button></div>'
           + '<div class="qa-chips">' + chip(AQ.pv === "real", 'data-qa="pvm" data-v="real"', "معاينة ببيانات فعلية") + chip(AQ.pv === "test", 'data-qa="pvm" data-v="test"', "معاينة ببيانات اختبار") + '</div><div id="qa-tpv">' + pvBody() + '</div></details>'
       }
-      function quickView() { return listView() + editorView() }
+      function quickView() { return listView() + '<div class="card"><b>📝 قوالب نص التقرير</b><div class="mute" style="font-size:12.5px;margin:4px 0 8px">إنشاء وتعديل قوالب نص «بعد الحصة» (النص الأساسي، تعليمات ChatGPT، النص النهائي) صار من صفحة مستقلة.</div><a class="btn p" href="#rtpl">📝 فتح إدارة قوالب النصوص</a></div>' }
 
       /* ---------- ربط بصفحة التقارير: التابات الأخرى تُقفل مؤقتًا بدون حذف كودها ---------- */
       reportsV = function () {
@@ -14746,7 +14764,7 @@
       function dlg(o) {
         var d = build(o), e = sesGet(o.row.k), el = document.createElement("div"); el.className = "dlg"; el.setAttribute("data-qd-k", o.row.k);
         function ta(f, l, ph) { return '<label>' + l + '<textarea data-qf="' + f + '" rows="2" placeholder="' + esc(ph || "") + '">' + esc(e[f] || "") + '</textarea></label>' }
-        el.innerHTML = '<div class="fm" style="max-height:90vh;overflow:auto"><h2>تعديل تقرير ' + esc(o.row.name) + '</h2><div class="mute" style="font-size:12px">التعديل هنا يخص هذا التقرير فقط ولا يغيّر سجل الحضور ولا بيانات الطالب أو الحصة.</div><div class="qa-fm">'
+        el.innerHTML = '<div class="fm" style="max-height:90vh;overflow:auto"><h2>تعديل تقرير ' + esc(o.row.name) + '</h2><div class="mute" style="font-size:12px">التعديل هنا يخص هذا التقرير فقط ولا يغيّر سجل الحضور ولا بيانات الطالب أو الحصة.</div>' + (d.mist.amb ? '<div class="qa-warn" style="color:#8A5A00">⚠ فيه ' + AR(d.mist.amb) + ' علامة مصحف بتاريخ اليوم غير مرتبطة بحصة محددة (الطالب عنده أكتر من حصة النهارده) ولم تدخل في التقرير. <button data-qd="att">🔗 اربطها بهذه الحصة</button></div>' : '') + '<div class="qa-fm">'
           + ta("study", "ما تمت دراسته") + ta("review", "المراجعة") + ta("note", "ملاحظات المعلم", d.note && !e.note ? "من سجل الحضور: " + d.note : "") + ta("hw", "الواجب القادم")
           + '<label>التقييم<select data-qf="ev"><option value=""></option>' + EVS.map(function (x) { return '<option' + (e.ev === x ? " selected" : "") + '>' + x + '</option>' }).join("") + '</select></label>' + ta("msg", "الرسالة الختامية (فاضية = الرسالة التلقائية حسب الحضور)")
           + '<label>نص الرسالة لهذا التقرير فقط (اختياري — فاضي = يُولَّد من الـTemplate)<textarea data-qf="txt" rows="6">' + esc(e.txt || "") + '</textarea></label></div>'
@@ -14754,7 +14772,8 @@
         el.addEventListener("click", function (ev) {
           var t = ev.target, a = t.getAttribute && t.getAttribute("data-qd");
           if (t === el || a === "x") { el.remove(); return }
-          if (a === "fill") { var cur = {}; el.querySelectorAll("[data-qf]").forEach(function (i) { cur[i.getAttribute("data-qf")] = i.value }); var o2 = findRow(o.row.k); var dd = build(o2);["study", "review", "note", "hw", "ev", "msg"].forEach(function (f) { dd[f] = cur[f] != null && cur[f].trim() ? cur[f] : (f === "note" ? dd.note : f === "msg" ? dd.msg : "") }); dd.txtOverride = ""; el.querySelector('[data-qf="txt"]').value = fill(tplSaved() || DEF_TPL, vals(dd)); return }
+          if (a === "fill") { var cur = {}; el.querySelectorAll("[data-qf]").forEach(function (i) { cur[i.getAttribute("data-qf")] = i.value }); var o2 = findRow(o.row.k); var dd = build(o2);["study", "review", "note", "hw", "ev", "msg"].forEach(function (f) { dd[f] = cur[f] != null && cur[f].trim() ? cur[f] : (f === "note" ? dd.note : f === "msg" ? dd.msg : "") }); dd.txtOverride = ""; el.querySelector('[data-qf="txt"]').value = fill(tplFinal(tplFor(o.row.k, o.row.sid)), vals(dd)); return }
+          if (a === "att") { var q = db.settings.mkSes = db.settings.mkSes || {}, qs = q[o.row.sid] = q[o.row.sid] || {}; d.mist.ambKeys.forEach(function (k) { qs[k] = o.it.key }); save(); el.remove(); toast("تم ربط العلامات بهذه الحصة ✓"); render(); return }
           if (a === "ok") { var n = {}; el.querySelectorAll("[data-qf]").forEach(function (i) { n[i.getAttribute("data-qf")] = i.value.trim() }); sesPut(o.row.k, n); el.remove(); toast("تم الحفظ ✓"); render() }
         });
         document.body.appendChild(el)
@@ -14800,7 +14819,142 @@
         if (view !== "reports" || T.tab !== "quick" || document.querySelector(".dlg")) return;
         var ae = document.activeElement; if (ae && /^(TEXTAREA|INPUT|SELECT)$/.test(ae.tagName)) return; render()
       }, 60000);
-      window.rptQuick = { items: items, build: build, fill: fill, vals: vals, mistakes: mistakes, gamesOf: gamesOf, unknownVars: unknownVars, DEF_TPL: DEF_TPL };
+      /* ================= قوالب النصوص (db.settings.rptTpl) =================
+         rptTpl = { v:1, items:{ id:{ id,name,type,academy("" = كل الأكاديميات),desc,base,prompt,vars(null = الكل),final,createdAt,updatedAt } },
+                    def:{ "النوع|academyId أو *": id } }
+         اختيار قالب لتقرير بعينه: rptQ.tpl[gid|day|sid] = id  (لا يغيّر الافتراضي). */
+      var RTYPES = [["after_session", "بعد الحصة"]];
+      var MANUAL = { "محتوى_الحصة": 1, "المراجعة": 1, "ملاحظات_المعلم": 1, "الواجب_القادم": 1, "التقييم": 1, "الرسالة_الختامية": 1 };
+      function TS() {
+        var s = db.settings, t = s.rptTpl;
+        if (!t || typeof t !== "object" || Array.isArray(t)) {
+          t = s.rptTpl = { v: 1, items: {}, def: {} }; var q = cfg(), now = Date.now();
+          if (q.final || q.base || q.prompt != null) {            /* ترحيل المحرر القديم مرة واحدة (rptQ يبقى كما هو بلا حذف) */
+            t.items["tpl-legacy"] = { id: "tpl-legacy", name: "القالب الحالي", type: "after_session", academy: "", desc: "منقول تلقائيًا من محرر النص السابق", base: q.base || "", prompt: q.prompt != null ? q.prompt : DEF_PROMPT, vars: null, final: q.final || DEF_TPL, createdAt: now, updatedAt: now };
+            if (q.final) t.def["after_session|*"] = "tpl-legacy"
+          }
+          save()
+        }
+        if (!t.items || typeof t.items !== "object") t.items = {}; if (!t.def || typeof t.def !== "object") t.def = {}; return t
+      }
+      function typeName(t) { for (var i = 0; i < RTYPES.length; i++) if (RTYPES[i][0] === t) return RTYPES[i][1]; return t }
+      function acName(id) { if (!id) return "كل الأكاديميات"; var a = acadById(id); return a ? a.name : "أكاديمية محذوفة" }
+      function acadOf(sid) { var s = stuById(sid); return (s && s.academy) || "" }
+      function tplArr() { var T0 = TS(); return Object.keys(T0.items).map(function (k) { return T0.items[k] }) }
+      function tplDefault(sid, type) { var T0 = TS(), a = acadOf(sid), id = T0.def[(type || "after_session") + "|" + (a || "*")] || T0.def[(type || "after_session") + "|*"], it = id && T0.items[id]; return it || null }
+      function tplFor(k, sid) {
+        var T0 = TS(), id = (cfg().tpl || {})[k], it = id && T0.items[id];
+        if (it && it.type === "after_session") return { t: it, src: "sel" };
+        it = tplDefault(sid); return it ? { t: it, src: "def" } : { t: null, src: "builtin" }
+      }
+      function tplFinal(r) { return r && r.t && String(r.t.final || "").trim() ? r.t.final : DEF_TPL }
+      function tplSel(x) {
+        var r = tplFor(x.k, x.sid), a = acadOf(x.sid), all = tplArr().filter(function (t) { return t.type === "after_session" }), df = tplDefault(x.sid);
+        function grp(l, arr) { return arr.length ? '<optgroup label="' + esc(l) + '">' + arr.map(function (t) { return '<option value="' + esc(t.id) + '"' + (r.src === "sel" && r.t.id === t.id ? " selected" : "") + '>' + esc(t.name) + '</option>' }).join("") + '</optgroup>' : "" }
+        var mine = all.filter(function (t) { return a && t.academy === a }), gen = all.filter(function (t) { return !t.academy }), oth = all.filter(function (t) { return t.academy && t.academy !== a });
+        var h = '<div class="qa-ts"><label>قالب النص: <select data-qts="1" data-k="' + esc(x.k) + '"><option value=""' + (r.src === "sel" ? "" : " selected") + '>الافتراضي — ' + esc(df ? df.name : "المدمج (الصياغة الحالية)") + '</option>' + grp("قوالب أكاديمية الطالب", mine) + grp("قوالب عامة", gen) + grp("قوالب أكاديميات أخرى", oth) + '</select></label>';
+        if (r.t) h += '<div class="mute" style="font-size:12px">' + esc(r.t.name) + (r.t.desc ? " — " + esc(r.t.desc) : "") + '</div>';
+        return h + '</div>'
+      }
+      document.addEventListener("change", function (ev) {
+        var t = ev.target; if (!t.getAttribute) return;
+        if (t.getAttribute("data-qts")) { var k = t.getAttribute("data-k"), w = wr(), m = w.tpl = w.tpl || {}; if (t.value) m[k] = t.value; else delete m[k]; if (!Object.keys(m).length) delete w.tpl; save(); render(); return }
+        rtChange(t)
+      });
+
+      /* ================= صفحة «إدارة قوالب النصوص» ================= */
+      var RT = { mode: "list", d: null, dirty: false, pv: "real", row: "", fa: "", ft: "" };
+      function dtl(ts) { return ts ? new Date(ts).toLocaleString("ar-EG", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "—" }
+      function isDef(it) { return TS().def[it.type + "|" + (it.academy || "*")] === it.id }
+      function rtList() {
+        var arr = tplArr().filter(function (t) { return (!RT.fa || (RT.fa === "g" ? !t.academy : t.academy === RT.fa)) && (!RT.ft || t.type === RT.ft) }).sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0) });
+        var h = '<h1>📝 إدارة قوالب النصوص</h1><div class="mute" style="margin-bottom:8px">نصوص التقارير فقط (التصميم البصري له صفحة مستقلة لاحقًا). الذكاء الاصطناعي يُستخدم خارج الموقع بالنسخ واللصق؛ الموقع يستبدل المتغيرات محليًا.</div>'
+          + '<div class="card"><div class="row"><button class="p" data-rt="new">➕ قالب جديد</button><select data-rtflt="fa"><option value="">كل الأكاديميات</option><option value="g"' + (RT.fa === "g" ? " selected" : "") + '>القوالب العامة فقط</option>' + db.academies.map(function (a) { return '<option value="' + esc(a.id) + '"' + (RT.fa === a.id ? " selected" : "") + '>' + esc(a.name) + '</option>' }).join("") + '</select><select data-rtflt="ft"><option value="">كل أنواع التقارير</option>' + RTYPES.map(function (t) { return '<option value="' + t[0] + '"' + (RT.ft === t[0] ? " selected" : "") + '>' + t[1] + '</option>' }).join("") + '</select></div></div>';
+        if (!arr.length) return h + '<div class="card empty"><div style="font-size:42px">📝</div><p>' + (tplArr().length ? "مفيش قوالب في الفلتر ده." : "لسه مفيش قوالب. التقارير بتستخدم الصياغة المدمجة الحالية لحد ما تعمل قالب.") + '</p></div>';
+        return h + arr.map(function (t) {
+          var a = ' data-id="' + esc(t.id) + '"';
+          return '<div class="card"><div class="qa-r1"><b>' + esc(t.name) + '</b><span class="qa-b">' + esc(typeName(t.type)) + '</span><span class="qa-b">🏢 ' + esc(acName(t.academy)) + '</span>' + (isDef(t) ? '<span class="qa-b sent">⭐ افتراضي ' + (t.academy ? "للأكاديمية" : "عام") + '</span>' : "") + '</div>'
+            + (t.desc ? '<div style="margin-top:4px">' + esc(t.desc) + '</div>' : "") + '<div class="mute" style="font-size:12px;margin-top:3px">أُنشئ: ' + dtl(t.createdAt) + ' · آخر تعديل: ' + dtl(t.updatedAt) + '</div>'
+            + '<div class="qa-acts"><button class="p" data-rt="edit"' + a + '>✏️ تعديل</button>' + (isDef(t) ? '<button data-rt="undef"' + a + '>إلغاء الافتراضي</button>' : '<button data-rt="def"' + a + '>⭐ اجعله افتراضيًا</button>') + '<button data-rt="dup"' + a + '>📄 تكرار</button><button data-rt="del"' + a + '>🗑 حذف</button></div></div>'
+        }).join("")
+      }
+      function rtVarsSel(d) { return d.vars == null ? VNAMES.slice() : d.vars }
+      function aiPack2(d) {
+        var sel = rtVarsSel(d);
+        return (d.prompt || "") + "\n\n———\nالمتغيرات المتاحة (استخدمها بنفس الأسماء تمامًا بين أقواس {}):\n" + VARS.map(function (g) { return g[1].filter(function (v) { return sel.indexOf(v[0]) > -1 }).map(function (v) { return "{" + v[0] + "}: " + v[1] }).join("\n") }).filter(Boolean).join("\n") + "\n\n———\nنص التقرير:\n" + (d.base || "")
+      }
+      function rtRows() { var o = []; items().forEach(function (it) { it.rows.forEach(function (x) { o.push({ k: x.k, l: x.name + " — " + (x.v ? ST[x.v] : "بلا حضور") + " — " + (it.t ? tmFmt(it.day, it.t) + " " : "") + it.title }) }) }); return o }
+      function rtPv() {
+        var d = RT.d, rows = rtRows(), o = null, lab, dat;
+        if (RT.pv === "real") { var kk = RT.row && rows.some(function (r) { return r.k === RT.row }) ? RT.row : (rows[0] && rows[0].k); o = kk ? findRow(kk) : null }
+        if (o) { dat = build(o); dat.txtOverride = ""; lab = '<b style="color:#176B3A">بيانات فعلية</b>: ' + esc(o.row.name) + " — " + esc(o.it.title) } else { dat = testData(); lab = '<b style="color:#B3261E">بيانات اختبار (غير حقيقية — لا تثبت ربط البيانات)</b>' + (RT.pv === "real" ? " · لا توجد حصص اليوم" : "") }
+        var V = vals(dat), un = unknownVars(d.final), empty = VNAMES.filter(function (n) { return String(d.final).indexOf("{" + n + "}") > -1 && !String(V[n] == null ? "" : V[n]).trim() });
+        return '<div class="mute" style="font-size:12px">المعاينة على: ' + lab + '</div><div class="qa-out">' + esc(fill(d.final, V)) + '</div>'
+          + (empty.length ? '<div class="mute" style="font-size:12px;margin-top:4px">متغيرات فارغة في هذه المعاينة (تُحذف أسطرها): ' + empty.map(function (n) { return "{" + esc(n) + "}" }).join(" ") + '</div>' : "")
+          + (un.length ? '<div class="qa-warn">⚠ متغيّرات غير معروفة (ستُحذف من التقرير): ' + un.map(function (u) { return "{" + esc(u) + "}" }).join(" ") + '</div>' : "")
+      }
+      function rtEdit() {
+        var d = RT.d, sel = rtVarsSel(d), rows = rtRows();
+        function vrow(v) { return '<label class="rt-v"><input type="checkbox" data-rtvc="' + esc(v[0]) + '"' + (sel.indexOf(v[0]) > -1 ? " checked" : "") + '><span><code data-rt="ins" data-v="{' + esc(v[0]) + '}" title="إدراج في النص النهائي">{' + esc(v[0]) + '}</code> <span class="qa-b ' + (MANUAL[v[0]] ? "unsent" : "sent") + '">' + (MANUAL[v[0]] ? "يدخلها المعلم" : "تلقائي") + '</span><span class="mute" style="display:block;font-size:12px">' + esc(v[1]) + '</span></span></label>' }
+        var all = []; VARS.forEach(function (g) { g[1].forEach(function (v) { all.push(v) }) });
+        return '<h1>📝 ' + (d.id ? "تعديل قالب" : "قالب جديد") + '</h1><div class="card"><h3>بيانات القالب <span id="rt-dirty" class="qa-dirty">' + (RT.dirty ? "● تعديلات غير محفوظة" : "") + '</span></h3><div class="qa-fm">'
+          + '<label>اسم القالب<input data-rtf="name" value="' + esc(d.name) + '" placeholder="مثال: تقرير العصر المختصر"></label>'
+          + '<label>الأكاديمية<select data-rtfs="academy"><option value="">كل الأكاديميات (قالب عام)</option>' + db.academies.map(function (a) { return '<option value="' + esc(a.id) + '"' + (d.academy === a.id ? " selected" : "") + '>' + esc(a.name) + '</option>' }).join("") + '</select></label>'
+          + '<label>نوع التقرير<select data-rtfs="type">' + RTYPES.map(function (t) { return '<option value="' + t[0] + '"' + (d.type === t[0] ? " selected" : "") + '>' + t[1] + '</option>' }).join("") + '</select></label>'
+          + '<label>وصف مختصر<input data-rtf="desc" value="' + esc(d.desc) + '" placeholder="متى يُستخدم هذا القالب؟"></label></div>'
+          + (d.id ? '<div class="mute" style="font-size:12px">أُنشئ: ' + dtl(d.createdAt) + ' · آخر تعديل: ' + dtl(d.updatedAt) + '</div>' : "") + '</div>'
+          + '<div class="card rt-sec rt-s1"><h3>① النص الأساسي</h3><div class="mute" style="font-size:12px">صياغتك الأصلية للتقرير كما تكتبها بنفسك.</div><textarea data-rtf="base" placeholder="السلام عليكم ورحمة الله وبركاته…">' + esc(d.base) + '</textarea></div>'
+          + '<div class="card rt-sec rt-s2"><h3>② تعليمات ChatGPT</h3><div class="mute" style="font-size:12px">تُنسخ مع المتغيرات المختارة والنص الأساسي وتُرسل لـ ChatGPT خارج الموقع — لا يوجد اتصال بأي API.</div><textarea data-rtf="prompt">' + esc(d.prompt) + '</textarea><div class="qa-chips"><button data-rt="rstp">↺ التعليمات الافتراضية</button></div>'
+          + '<h4>المتغيرات المتاحة <span class="mute" style="font-size:12px">(علّم ما تريد تضمينه في الطلب · اضغط الاسم لإدراجه في النص النهائي)</span></h4><div class="qa-chips"><button data-rt="vall">تحديد الكل</button><button data-rt="vnone">إلغاء الكل</button></div>'
+          + '<b style="font-size:13px">متغيرات تلقائية (يجلبها الموقع)</b><div class="qa-vg">' + all.filter(function (v) { return !MANUAL[v[0]] }).map(vrow).join("") + '</div><b style="font-size:13px;display:block;margin-top:8px">متغيرات يدخلها المعلم (من زر «تعديل» في كل تقرير)</b><div class="qa-vg">' + all.filter(function (v) { return MANUAL[v[0]] }).map(vrow).join("") + '</div>'
+          + '<div class="qa-chips"><button class="p" data-rt="cpai">📋 نسخ الطلب الكامل لـ ChatGPT</button></div></div>'
+          + '<div class="card rt-sec rt-s3"><h3>③ النص النهائي المعتمد</h3><div class="mute" style="font-size:12px">الصق هنا ما أعاده ChatGPT. السطر الذي كل متغيّراته فاضية يُحذف تلقائيًا.</div><textarea id="rt-final" data-rtf="final">' + esc(d.final) + '</textarea>'
+          + '<div class="qa-chips"><select data-rtpv="m"><option value="real"' + (RT.pv === "real" ? " selected" : "") + '>معاينة ببيانات فعلية (حصص اليوم)</option><option value="test"' + (RT.pv === "test" ? " selected" : "") + '>معاينة ببيانات اختبار</option></select>'
+          + (RT.pv === "real" && rows.length ? '<select data-rtpv="r">' + rows.map(function (r) { return '<option value="' + esc(r.k) + '"' + (RT.row === r.k ? " selected" : "") + '>' + esc(r.l) + '</option>' }).join("") + '</select>' : "") + '</div><div id="rt-pv">' + rtPv() + '</div>'
+          + '<div class="qa-chips"><button class="p" data-rt="save">💾 حفظ واعتماد</button><button data-rt="back">↩ رجوع للقائمة</button></div></div>'
+      }
+      function rtplV() { return RT.mode === "edit" && RT.d ? rtEdit() : rtList() }
+      function rtNew() { return { id: "", name: "", type: "after_session", academy: "", desc: "", base: "", prompt: DEF_PROMPT, vars: null, final: DEF_TPL, createdAt: 0, updatedAt: 0 } }
+      function rtDirty() { RT.dirty = true; var e = document.getElementById("rt-dirty"); if (e) e.textContent = "● تعديلات غير محفوظة" }
+      function rtPaint() { var e = document.getElementById("rt-pv"); if (e) e.innerHTML = rtPv() }
+      function rtChange(t) {
+        if (view !== "rtpl") return; var f;
+        if ((f = t.getAttribute("data-rtflt"))) { RT[f] = t.value; render(); return }
+        if ((f = t.getAttribute("data-rtfs")) && RT.d) { RT.d[f] = t.value; rtDirty(); return }
+        if (t.getAttribute("data-rtvc") && RT.d) { var sel = rtVarsSel(RT.d).slice(), n = t.getAttribute("data-rtvc"), i = sel.indexOf(n); if (t.checked && i < 0) sel.push(n); else if (!t.checked && i > -1) sel.splice(i, 1); RT.d.vars = sel; rtDirty(); return }
+        if ((f = t.getAttribute("data-rtpv"))) { if (f === "m") RT.pv = t.value; else RT.row = t.value; render() }
+      }
+      document.addEventListener("input", function (ev) {
+        var t = ev.target, f = t.getAttribute && t.getAttribute("data-rtf"); if (!f || view !== "rtpl" || !RT.d) return;
+        RT.d[f] = t.value; rtDirty(); if (f === "final") rtPaint()
+      });
+      document.addEventListener("click", function (ev) {
+        var b = ev.target.closest && ev.target.closest("[data-rt]"); if (!b || view !== "rtpl") return;
+        var a = b.getAttribute("data-rt"), id = b.getAttribute("data-id"), T0 = TS(), it = id && T0.items[id], d = RT.d;
+        if (a === "new") { RT.d = rtNew(); RT.mode = "edit"; RT.dirty = false; render(); return }
+        if (a === "edit" && it) { RT.d = JSON.parse(JSON.stringify(it)); RT.mode = "edit"; RT.dirty = false; render(); return }
+        if (a === "def" && it) { T0.def[it.type + "|" + (it.academy || "*")] = it.id; save(); toast("تم تعيينه كافتراضي ✓"); render(); return }
+        if (a === "undef" && it) { delete T0.def[it.type + "|" + (it.academy || "*")]; save(); render(); return }
+        if (a === "dup" && it) { var c = JSON.parse(JSON.stringify(it)); c.id = "t" + Date.now().toString(36); c.name = it.name + " (نسخة)"; c.createdAt = c.updatedAt = Date.now(); T0.items[c.id] = c; save(); toast("تم التكرار ✓"); render(); return }
+        if (a === "del" && it) { ask("حذف القالب «" + it.name + "»؟ التقارير المرتبطة به ترجع للقالب الافتراضي.", function () { delete T0.items[id]; Object.keys(T0.def).forEach(function (k) { if (T0.def[k] === id) delete T0.def[k] }); save(); render() }); return }
+        if (!d) return;
+        if (a === "back") { if (RT.dirty) { ask("فيه تعديلات غير محفوظة. تتجاهلها وترجع؟", function () { RT.mode = "list"; RT.d = null; RT.dirty = false; render() }) } else { RT.mode = "list"; RT.d = null; render() } return }
+        if (a === "rstp") { d.prompt = DEF_PROMPT; rtDirty(); render(); return }
+        if (a === "vall") { d.vars = null; rtDirty(); render(); return } if (a === "vnone") { d.vars = []; rtDirty(); render(); return }
+        if (a === "ins") { var ta = document.getElementById("rt-final"); if (!ta) return; var v = b.getAttribute("data-v"), p0 = ta.selectionStart == null ? ta.value.length : ta.selectionStart, p1 = ta.selectionEnd == null ? p0 : ta.selectionEnd; ta.value = ta.value.slice(0, p0) + v + ta.value.slice(p1); ta.focus(); ta.selectionStart = ta.selectionEnd = p0 + v.length; d.final = ta.value; rtDirty(); rtPaint(); return }
+        if (a === "cpai") { if (!String(d.base || "").trim()) { toast("اكتب النص الأساسي أولًا"); return } copyTxt(aiPack2(d)); return }
+        if (a === "save") {
+          if (!String(d.name).trim()) { toast("اكتب اسم القالب"); return } if (!String(d.final).trim()) { toast("النص النهائي فاضي"); return }
+          var now = Date.now(), o = JSON.parse(JSON.stringify(d)); o.name = o.name.trim(); if (!o.id) { o.id = "t" + now.toString(36); o.createdAt = now } o.updatedAt = now;
+          var old = T0.items[o.id]; if (old && isDef(old) && (old.academy !== o.academy || old.type !== o.type)) { delete T0.def[old.type + "|" + (old.academy || "*")] }
+          T0.items[o.id] = o; RT.d = JSON.parse(JSON.stringify(o)); RT.dirty = false; save(); toast("تم حفظ واعتماد القالب ✓"); render(); return
+        }
+      });
+      var rtSt = document.createElement("style"); rtSt.textContent = ".rt-sec{border-inline-start:5px solid var(--acc)}.rt-s1{border-inline-start-color:#8A5A00}.rt-s2{border-inline-start-color:#2a5db0}.rt-s3{border-inline-start-color:#176B3A}.rt-sec textarea{width:100%;direction:rtl;min-height:130px;font:inherit;line-height:1.7}.rt-v{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;cursor:pointer}.rt-v code{cursor:pointer;background:var(--card2);border:1px solid var(--line);border-radius:6px;padding:1px 6px}.qa-ts{padding:0 14px 6px}.qa-ts select{max-width:100%}"; document.head.appendChild(rtSt);
+      VIEWS.push(["rtpl", "📝", "إدارة قوالب النصوص", 2]); BUILT.rtpl = 1; NAVN.rtpl = "📝 قوالب النصوص"; NAVG[1][1].splice(NAVG[1][1].indexOf("reports") + 1, 0, "rtpl");
+      var _lkR = lockV; lockV = function () { return view === "rtpl" ? rtplV() : _lkR() };
+
+      window.rptQuick = { TS: TS, tplFor: tplFor, tplFinal: tplFinal, reportText: reportText, sessOf: sessOf, items: items, build: build, fill: fill, vals: vals, mistakes: mistakes, gamesOf: gamesOf, unknownVars: unknownVars, DEF_TPL: DEF_TPL };
       nav(); if (view === "reports") render()
     })();
   </script>
