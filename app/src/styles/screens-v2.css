@@ -1347,126 +1347,174 @@
 }
 
 /* ----- Mushaf ----- */
+:root {
+  --page: #fffbef;
+  --page-ink: #1d2b26;
+  --page-head: #0a6b54;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --page: #1a2c28; --page-ink: #f2eedd; --page-head: #5fd6ad; }
+}
+:root[data-theme="dark"] { --page: #1a2c28; --page-ink: #f2eedd; --page-head: #5fd6ad; }
+
 .mushaf-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
   padding: 0.5rem 0.6rem;
 }
 
-.mushaf-bar select { flex: 1; min-width: 0; }
+.mushaf-bar select { flex: 1 1 7rem; min-width: 0; }
 .mushaf-size { display: inline-flex; gap: 0.25rem; margin-inline-start: auto; }
 
-.mushaf-legend {
+.mushaf-brush {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin: 0 0 0.75rem;
-  font-size: 0.78rem;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+  padding: 0.5rem 0.6rem;
 }
 
-.mushaf-legend span { padding: 0 0.4rem; border-radius: 6px; }
+.brush {
+  padding: 0.3rem 0.9rem;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 
-.mushaf {
-  padding: 1.25rem 1rem 1.5rem;
+.brush[aria-checked="true"].mk-hifz { background: #d64541; border-color: #d64541; color: #fff; }
+.brush[aria-checked="true"].mk-tajweed { background: #e8961e; border-color: #e8961e; color: #fff; }
+.brush[aria-checked="true"].mk-pronunciation { background: #7b5cc4; border-color: #7b5cc4; color: #fff; }
+.brush-count { margin-inline-start: auto; font-size: 0.85rem; color: var(--ink-muted); }
+.mushaf-note { margin: 0 0 0.6rem; }
+
+.mushaf-frame {
+  position: relative;
+  padding: 0;
+  border: 7px solid #17604a;
+  border-radius: 16px;
+  box-shadow: 0 0 0 2px var(--gold), 0 10px 26px rgba(0, 0, 0, 0.2);
+  background: var(--page);
+}
+
+.mushaf-frame::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1.5px solid var(--gold);
+  border-radius: 9px;
+  pointer-events: none;
+}
+
+.mushaf-page {
+  padding: 0.6rem 1rem 0.5rem;
   font-family: 'Amiri Quran', 'Amiri', serif;
   line-height: 2.3;
-  color: var(--ink);
+  color: var(--page-ink);
+  touch-action: pan-y;
 }
 
-.mushaf-title {
-  margin: 0 0 0.25rem;
-  padding: 0.2rem 0;
-  border: 2px solid var(--gold);
+.mushaf-top,
+.mushaf-foot {
+  display: flex;
+  justify-content: space-between;
+  font: 700 0.75rem/1.6 var(--font-ui);
+  color: var(--page-head);
+}
+
+.mushaf-foot { justify-content: center; }
+
+.mushaf-pnum {
+  min-width: 2rem;
+  padding: 0 0.5rem;
+  border: 1.5px solid var(--gold);
   border-radius: 999px;
   text-align: center;
-  font-size: 0.8em;
   color: var(--gold-ink);
+}
+
+.mushaf-head { text-align: center; }
+
+.mushaf-title {
+  display: inline-block;
+  margin: 0.25rem 0 0;
+  padding: 0 1.75rem;
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  font: 800 1rem/2 var(--font-ui);
+  color: var(--page-head);
   background: var(--gold-soft);
 }
 
-.mushaf-basmala { margin: 0.25rem 0 0.5rem; text-align: center; }
+.mushaf-basmala { margin: 0; color: var(--page-head); }
 
 .mushaf-text {
-  margin: 0;
+  margin: 0.25rem 0;
   text-align: justify;
   text-align-last: center;
 }
 
-.ayah.in-range { background: color-mix(in srgb, var(--emerald) 9%, transparent); border-radius: 6px; }
-
 .qw {
   font: inherit;
   color: inherit;
-  padding: 0 0.05em;
+  padding: 0 0.04em;
   border: 0;
   border-radius: 6px;
   background: none;
-  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-button.qw:hover { background: var(--emerald-soft); }
+.is-marking .qw { cursor: pointer; user-select: none; -webkit-user-select: none; }
+.is-marking .qw:hover { background: color-mix(in srgb, var(--gold) 30%, transparent); }
+.qw.in-range { background: color-mix(in srgb, var(--emerald) 10%, transparent); }
+.w-c1 { box-shadow: inset 0 -0.12em 0 color-mix(in srgb, var(--gold) 70%, transparent); }
+.w-c3 { box-shadow: inset 0 -0.14em 0 #d64541; }
+.qw.is-marked { color: #fff; }
+.qw.is-marked.mk-hifz { background: #d64541; }
+.qw.is-marked.mk-tajweed { background: #e8961e; }
+.qw.is-marked.mk-pronunciation { background: #7b5cc4; }
 
-.w-c1 { background: color-mix(in srgb, var(--gold) 22%, transparent); }
-.w-c3 { background: color-mix(in srgb, #d64541 26%, transparent); }
-.qw.is-marked,
-.mushaf-legend .is-marked {
-  background: #d64541;
-  color: #fff;
-}
-
-.q-mark { color: var(--emerald); font-size: 0.8em; }
+.q-mark { color: #c0613f; font-size: 0.85em; }
 
 .ayah-no {
-  color: var(--emerald);
-  font-size: 0.85em;
-  white-space: nowrap;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.9em;
+  height: 1.9em;
+  margin: 0 0.15em;
+  border: 1.5px solid var(--gold);
+  border-radius: 50%;
+  color: var(--gold-ink);
+  font: 700 0.5em/1 var(--font-ui);
+  vertical-align: middle;
 }
 
-.ayah-no.has-old { color: #c0392b; }
+.ayah-no.has-old { border-color: #d64541; color: #d64541; }
 
+.mushaf-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.mushaf-nav input[type="range"] { flex: 1; min-width: 0; accent-color: var(--emerald); }
+.mushaf-nav .btn { white-space: nowrap; }
+
+.mushaf-info,
 .mushaf-loading,
 .mushaf-source {
-  margin: 0.75rem 0;
+  margin: 0.5rem 0;
   text-align: center;
   font-size: 0.75rem;
   color: var(--ink-muted);
-}
-
-.mushaf-sheet {
-  position: fixed;
-  inset-inline: 0.75rem;
-  bottom: calc(4.75rem + env(safe-area-inset-bottom));
-  z-index: 40;
-  max-width: 28rem;
-  margin: 0 auto;
-  padding: 0.9rem 1rem;
-  text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-}
-
-.mushaf-sheet-word {
-  margin: 0;
-  font-family: 'Amiri Quran', 'Amiri', serif;
-  font-size: 1.8rem;
-  line-height: 1.8;
-}
-
-.mushaf-sheet-actions {
-  display: flex;
-  justify-content: center;
-  gap: 0.4rem;
-  margin: 0.6rem 0 0.4rem;
-}
-
-.mistake-word { font-family: 'Amiri Quran', 'Amiri', serif; }
-
-.mushaf-open {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin: 0.75rem 0;
 }
 
 /* ----- Students' games ----- */
@@ -1572,3 +1620,12 @@ button.qw:hover { background: var(--emerald-soft); }
 .play-score { margin: 0.25rem 0 1rem; font-weight: 700; }
 
 .play-again { display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.75rem; }
+
+.mistake-word { font-family: 'Amiri Quran', 'Amiri', serif; }
+
+.mushaf-open {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
+}

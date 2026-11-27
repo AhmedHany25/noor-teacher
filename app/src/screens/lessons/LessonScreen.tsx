@@ -162,6 +162,13 @@ function Lesson({
             {longDate(lesson.date)}، {time12(lesson.time)}، {toArabicDigits(lesson.durationMin)} دقيقة
           </>
         }
+        action={
+          !lesson.cancelledBy && (
+            <Link to={`/mushaf?student=${people[0].id}${session ? `&session=${session.id}` : ''}`} className="btn btn-ghost-light">
+              المصحف
+            </Link>
+          )
+        }
       />
 
       {lesson.cancelledBy ? (

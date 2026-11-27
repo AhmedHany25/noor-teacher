@@ -5,6 +5,7 @@ import { toArabicDigits } from '../lib/format'
 import {
   AcademyIcon,
   BellIcon,
+  BookIcon,
   ChecklistIcon,
   CircleIcon,
   MoreIcon,
@@ -16,10 +17,11 @@ import {
 
 type Item = { to: string; label: string; icon: ReactNode; mobile: boolean; rail: boolean }
 
-/** Five items fit the phone's bottom bar; the rest live under «المزيد». The desktop rail shows everything. */
+/** Six items fit the phone's bottom bar; the rest live under «المزيد». The desktop rail shows everything. */
 const ITEMS: Item[] = [
   { to: '/', label: 'اليوم', icon: <SunIcon />, mobile: true, rail: true },
   { to: '/attendance', label: 'الحضور', icon: <ChecklistIcon />, mobile: true, rail: true },
+  { to: '/mushaf', label: 'المصحف', icon: <BookIcon />, mobile: true, rail: true },
   { to: '/students', label: 'الطلاب', icon: <StudentsIcon />, mobile: true, rail: true },
   { to: '/groups', label: 'الحلقات', icon: <CircleIcon />, mobile: false, rail: true },
   { to: '/academies', label: 'المستحقات', icon: <AcademyIcon />, mobile: true, rail: true },
