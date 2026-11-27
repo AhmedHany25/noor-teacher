@@ -34,13 +34,13 @@ const seed = {
 describe('Month-end reminder', () => {
   it('points to the monthly reports in the last days of the month', async () => {
     renderApp('/', seed, { now: NOW })
-    await userEvent.click(screen.getByRole('link', { name: /التقارير الشهرية لـنوفمبر ٢٠٢٦ جاهزة/ }))
+    await userEvent.click(screen.getByRole('link', { name: 'التقارير، فاضل ٢ تقرير شهري من ٢' }))
     expect(screen.getByRole('heading', { level: 1, name: 'التقارير الشهرية' })).toBeInTheDocument()
   })
 
   it('stays quiet earlier in the month', () => {
     renderApp('/', seed, { now: new Date(2026, 10, 10, 12, 0) })
-    expect(screen.queryByRole('link', { name: /التقارير الشهرية/ })).not.toBeInTheDocument()
+    expect(within(screen.getByRole('navigation', { name: 'اختصارات' })).getByRole('link', { name: 'التقارير' })).toHaveAttribute('href', '/reports')
   })
 })
 
@@ -53,6 +53,29 @@ describe('Today', () => {
     expect(items[0]).toHaveTextContent('يوسف')
     expect(within(items[0]).getByRole('link', { name: /يوسف/ })).toHaveAttribute('href', '/attendance?date=2026-11-27&focus=fri')
     expect(screen.queryByRole('button', { name: 'يوسف: حضر' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Today shortcuts and timeline', () => {
+  it('offers shortcuts to the pages missing from the bottom bar', () => {
+    renderApp('/', seed, { now: NOW })
+    const nav = screen.getByRole('navigation', { name: 'اختصارات' })
+    expect(within(nav).getByRole('link', { name: /الحلقات/ })).toHaveAttribute('href', '/groups')
+    expect(within(nav).getByRole('link', { name: /الجدول/ })).toHaveAttribute('href', '/groups?view=week')
+    expect(within(nav).getByRole('link', { name: 'تسجيل مبلغ مستلم' })).toHaveAttribute('href', '/payments/new')
+  })
+
+  it('shows progress and marks past lessons that still need recording', () => {
+    const groups = [
+      group({ id: 'am', studentIds: ['s1'], slots: [{ weekday: 5, time: '09:00' }] }),
+      group({ id: 'pm', studentIds: ['s2'], slots: [{ weekday: 5, time: '17:00' }] }),
+    ]
+    renderApp('/', { students: [yusuf, omar], groups }, { now: NOW })
+    expect(screen.getByRole('region', { name: 'الحصة الجاية' })).toHaveTextContent('٠ من ٢ اتسجلت')
+    const items = within(screen.getByRole('list', { name: 'حصص اليوم' })).getAllByRole('listitem')
+    expect(items[0]).toHaveTextContent('سجّل')
+    expect(items[1]).toHaveTextContent('دلوقتي')
+    expect(items[1]).toHaveTextContent('الحصة الجاية')
   })
 })
 

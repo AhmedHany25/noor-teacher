@@ -92,3 +92,22 @@ export function BellIcon() {
     </svg>
   )
 }
+
+export function WeekIcon() {
+  return (
+    <svg {...base}>
+      <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" />
+      <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M7.5 13.5h2M11 13.5h2M14.5 13.5h2M7.5 17h2M11 17h2" />
+    </svg>
+  )
+}
+
+export function CashIcon() {
+  return (
+    <svg {...base}>
+      <rect x="2.5" y="6" width="19" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M6 9.5v.01M18 14.5v.01" />
+    </svg>
+  )
+}

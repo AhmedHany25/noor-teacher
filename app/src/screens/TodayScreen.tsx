@@ -1,14 +1,12 @@
 import { Link } from 'react-router'
-import { Avatar } from '../components/Avatar'
-import { LessonRow } from '../components/LessonRow'
+import { CashIcon, CircleIcon, ReportIcon, SettingsIcon, WeekIcon } from '../components/icons'
 import { PageHeader } from '../components/PageHeader'
 import { StudentRemindersCard } from '../components/StudentRemindersCard'
 import { useGroups, useSessions, useStudents } from '../data/data'
 import { useMissedLessons } from '../data/useMissed'
-import { sessionId } from '../domain/attendance'
+import { STATUS_TEXT, lessonStatus, sessionId, type Session } from '../domain/attendance'
 import { countryOf } from '../domain/countries'
-import { groupTitle, monthLabel, occurrencesOn, studentLocalTime, time12, type Group, type Occurrence } from '../domain/schedule'
-import type { Student } from '../domain/student'
+import { groupTitle, occurrencesOn, studentLocalTime, time12, type Occurrence } from '../domain/schedule'
 import { dateOf, useClock } from '../lib/clock'
 import { formatDayName, formatGregorian, formatHijri, toArabicDigits, untilText } from '../lib/format'
 
@@ -31,7 +29,6 @@ export function TodayScreen() {
   // Earlier days only: today's lessons are already on screen.
   const missed = missedAll.filter((o) => o.date !== today).length
   const groupOf = (o: Occurrence) => groups.find((g) => g.id === o.groupId)!
-  const firstName = (g: Group) => students.find((s) => s.id === g.studentIds[0])?.name
   const day = dateOf(today)
   // In the last days of the month, remind about monthly reports not sent yet.
   const activeStudents = students.filter((x) => x.status === 'active').length
@@ -82,53 +79,76 @@ export function TodayScreen() {
     )
   }
 
+  const reportsTo = reportsDue > 0 ? '/reports/parents' : '/reports'
+
   return (
     <>
       {header}
 
+      <nav className="shortcuts" aria-label="اختصارات">
+        <Link to="/groups" className="shortcut">
+          <span className="shortcut-icon"><CircleIcon /></span>
+          الحلقات
+        </Link>
+        <Link to="/groups?view=week" className="shortcut">
+          <span className="shortcut-icon"><WeekIcon /></span>
+          الجدول
+        </Link>
+        <Link
+          to={reportsTo}
+          className="shortcut"
+          aria-label={reportsDue > 0 ? `التقارير، فاضل ${toArabicDigits(reportsDue)} تقرير شهري من ${toArabicDigits(activeStudents)}` : 'التقارير'}
+        >
+          <span className="shortcut-icon">
+            <ReportIcon />
+            {reportsDue > 0 && <span className="shortcut-badge">{toArabicDigits(reportsDue)}</span>}
+          </span>
+          التقارير
+        </Link>
+        <Link to="/payments/new" className="shortcut" aria-label="تسجيل مبلغ مستلم">
+          <span className="shortcut-icon"><CashIcon /></span>
+          مبلغ
+        </Link>
+        <Link to="/settings" className="shortcut">
+          <span className="shortcut-icon"><SettingsIcon /></span>
+          الإعدادات
+        </Link>
+      </nav>
 
+      {active.length > 0 || missed > 0 ? (
+        <section className="day-card" aria-label="الحصة الجاية">
           {next ? (
-            <NextLesson o={next} group={groupOf(next)} students={students} teacherTz={timeZone} wait={minutesOf(next.time) - minutesOf(nowTime)} />
-          ) : (
-            active.length > 0 && (
-              <section className="hero hero-done" aria-label="الحصة الجاية">
-                <p className="hero-label">خلصت حصص النهارده</p>
-                <p className="hero-big">
-                  {recorded === active.length ? 'كلها متسجلة' : `فاضل تسجيل ${toArabicDigits(active.length - recorded)}`}
-                </p>
-              </section>
-            )
+            <Link to={`/lessons/${next.groupId}/${next.date}`} className="day-next" aria-label={`الحصة الجاية: ${groupTitle(groupOf(next), students)}`}>
+              <b>{minutesOf(next.time) <= minutesOf(nowTime) ? 'الحصة الجاية دلوقتي' : `الحصة الجاية بعد ${untilText(minutesOf(next.time) - minutesOf(nowTime))}`}</b>
+              <span>
+                {groupTitle(groupOf(next), students)}، {time12(next.time)}
+              </span>
+            </Link>
+          ) : active.length > 0 ? (
+            <p className="day-next">
+              <b>خلصت حصص النهارده</b>
+              <span>{recorded === active.length ? 'كلها متسجلة' : `فاضل تسجيل ${toArabicDigits(active.length - recorded)}`}</span>
+            </p>
+          ) : null}
+          {active.length > 0 && (
+            <div className="day-progress">
+              <div className="day-bar" aria-hidden="true">
+                <span style={{ width: `${Math.round((recorded / active.length) * 100)}%` }} />
+              </div>
+              <span className="field-hint">
+                {toArabicDigits(recorded)} من {toArabicDigits(active.length)} اتسجلت
+              </span>
+            </div>
           )}
-
-          <StudentRemindersCard />
-
-          {reportsDue > 0 && (
-            <Link to="/reports/parents" className="notice">
-              التقارير الشهرية لـ{monthLabel(today.slice(0, 7))} جاهزة: فاضل {toArabicDigits(reportsDue)} من {toArabicDigits(activeStudents)}
+          {missed > 0 && (
+            <Link to="/attendance?status=none&preset=month" className="tag tag-warn day-missed" aria-label={`${toArabicDigits(missed)} حصص فاتت من غير تسجيل`}>
+              {toArabicDigits(missed)} {missed === 1 ? 'حصة فاتت' : 'حصص فاتت'}، سجّلها
             </Link>
           )}
+        </section>
+      ) : null}
 
-          <div className="stats">
-            <div className="stat">
-              <b>{toArabicDigits(active.length)}</b>
-              <span>حصص اليوم</span>
-            </div>
-            <div className="stat stat-good">
-              <b>{toArabicDigits(recorded)}</b>
-              <span>اتسجلت</span>
-            </div>
-            {missed > 0 ? (
-              <Link to="/attendance?status=none&preset=month" className="stat stat-warn" aria-label={`${toArabicDigits(missed)} حصص فاتت من غير تسجيل`}>
-                <b>{toArabicDigits(missed)}</b>
-                <span>فاتت، سجّلها</span>
-              </Link>
-            ) : (
-              <div className="stat">
-                <b>٠</b>
-                <span>فاتت</span>
-              </div>
-            )}
-          </div>
+      <StudentRemindersCard />
 
       {lessons.length === 0 ? (
         <section className="empty card">
@@ -138,20 +158,20 @@ export function TodayScreen() {
           </p>
         </section>
       ) : (
-        <ol className="lessons" aria-label="حصص اليوم">
-          {lessons.map((o) => {
+        <ol className="timeline" aria-label="حصص اليوم">
+          {lessons.map((o, i) => {
             const group = groupOf(o)
+            const showNow = o.time > nowTime && (i === 0 || lessons[i - 1].time <= nowTime)
             return (
-              <LessonRow
+              <TimelineRow
                 key={`${o.groupId}-${o.time}`}
                 o={o}
-                group={group}
                 title={groupTitle(group, students)}
-                avatarName={firstName(group)}
                 session={sessions.find((s) => s.id === sessionId(o.groupId, o.date))}
                 isNext={o === next}
-                compact
-                linkTo={`/attendance?date=${today}&focus=${o.groupId}`}
+                past={o.time <= nowTime}
+                showNow={showNow && i > 0}
+                href={`/attendance?date=${today}&focus=${o.groupId}`}
                 localTimes={localTimes(o, group.studentIds, students, timeZone)}
               />
             )
@@ -162,36 +182,64 @@ export function TodayScreen() {
   )
 }
 
-function NextLesson({
+const KIND_TEXT = { regular: '', makeup: 'تعويض', trial: 'تجريبية' } as const
+
+/** One lesson on today's timeline: time, a dot coloured by its state, and a small card. */
+function TimelineRow({
   o,
-  group,
-  students,
-  teacherTz,
-  wait,
+  title,
+  session,
+  isNext,
+  past,
+  showNow,
+  href,
+  localTimes,
 }: {
   o: Occurrence
-  group: Group
-  students: Student[]
-  teacherTz: string
-  wait: number
+  title: string
+  session?: Session
+  isNext: boolean
+  past: boolean
+  showNow: boolean
+  href: string
+  localTimes: string[]
 }) {
-  const title = groupTitle(group, students)
-  const first = students.find((s) => s.id === group.studentIds[0])?.name ?? title
-  const local = localTimes(o, group.studentIds, students, teacherTz)
+  const status = lessonStatus(session)
+  const state = o.cancelledBy ? 'cancelled' : status ? status : isNext ? 'next' : past ? 'due' : 'later'
   return (
-    <Link to={`/lessons/${o.groupId}/${o.date}`} className="hero" aria-label={`الحصة الجاية: ${title}`}>
-      <p className="hero-label">{wait < 1 ? 'الحصة الجاية' : 'الحصة الجاية بعد'}</p>
-      <p className="hero-big">{untilText(wait)}</p>
-      <div className="hero-who">
-        <Avatar name={first} size="lg" />
-        <div>
-          <b>{title}</b>
-          <span>
-            {time12(o.time)}، {toArabicDigits(o.durationMin)} دقيقة{local.length ? `، ${local.join('، ')}` : ''}
+    <li className={`tl-row tl-${state}`} id={`lesson-${o.groupId}`}>
+      {showNow && (
+        <span className="tl-now" aria-hidden="true">
+          <span>دلوقتي</span>
+        </span>
+      )}
+      <span className="tl-time">{time12(o.time)}</span>
+      <span className="tl-dot" aria-hidden="true" />
+      <Link to={href} className="tl-card">
+        <span className="tl-main">
+          <span className="tl-title">{title}</span>
+          <span className="tl-meta">
+            {toArabicDigits(o.durationMin)} دقيقة
+            {localTimes.map((t) => ` · ${t}`).join('')}
           </span>
-        </div>
-      </div>
-    </Link>
+        </span>
+        <span className="tl-tags">
+          {KIND_TEXT[o.kind] && <span className="tag">{KIND_TEXT[o.kind]}</span>}
+          {o.movedFrom && <span className="tag">منقولة</span>}
+          {o.cancelledBy ? (
+            <span className="tag tag-muted">ملغاة</span>
+          ) : status && status !== 'mixed' ? (
+            <span className={`tag att-tag-${status}`}>{STATUS_TEXT[status]}</span>
+          ) : status === 'mixed' ? (
+            <span className="tag">اتسجل الحضور</span>
+          ) : isNext ? (
+            <span className="tag tag-next">الحصة الجاية</span>
+          ) : past ? (
+            <span className="tag tag-warn">سجّل</span>
+          ) : null}
+        </span>
+      </Link>
+    </li>
   )
 }
 
