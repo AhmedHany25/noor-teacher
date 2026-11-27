@@ -5,7 +5,10 @@ import {
   occurrencesOn,
   scheduleText,
   studentLocalTime,
+  monthGrid,
   validateGroup,
+  weekDates,
+  weekStart,
   weekdayOf,
   type Group,
   type GroupInput,
@@ -149,5 +152,28 @@ describe('validateGroup', () => {
   })
   it('requires a time for every chosen day', () => {
     expect(validateGroup({ ...ok, slots: [{ weekday: 5, time: '' }] }).slots).toBeDefined()
+  })
+})
+
+describe('calendar helpers', () => {
+  it('starts weeks on Saturday', () => {
+    expect(weekStart('2026-11-27')).toBe('2026-11-21') // Friday → previous Saturday
+    expect(weekStart('2026-11-28')).toBe('2026-11-28') // Saturday itself
+    expect(weekDates('2026-11-27')).toEqual([
+      '2026-11-21',
+      '2026-11-22',
+      '2026-11-23',
+      '2026-11-24',
+      '2026-11-25',
+      '2026-11-26',
+      '2026-11-27',
+    ])
+  })
+
+  it('builds whole weeks covering a month', () => {
+    const g = monthGrid('2026-11')
+    expect(g[0]).toBe('2026-10-31') // Saturday before Sun 1 Nov
+    expect(g.at(-1)).toBe('2026-12-04') // Friday after Mon 30 Nov
+    expect(g.length % 7).toBe(0)
   })
 })

@@ -176,3 +176,25 @@ export function monthLabel(month: string): string {
   const [y, m] = month.split('-').map(Number)
   return monthFmt.format(new Date(Date.UTC(y, m - 1, 1))).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[Number(d)])
 }
+
+/** Saturday on or before the date (Egyptian weeks start on Saturday). */
+export function weekStart(date: string): string {
+  return addDays(date, -WEEK_ORDER.indexOf(weekdayOf(date)))
+}
+
+/** The 7 dates of the date's week, Saturday first. */
+export function weekDates(date: string): string[] {
+  const start = weekStart(date)
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i))
+}
+
+/** Calendar grid for a month: whole weeks (Saturday first) covering every day of it. */
+export function monthGrid(month: string): string[] {
+  const first = `${month}-01`
+  const start = weekStart(first)
+  const last = addDays(addMonths(month, 1) + '-01', -1)
+  const end = addDays(weekStart(last), 6)
+  const out: string[] = []
+  for (let d = start; d <= end; d = addDays(d, 1)) out.push(d)
+  return out
+}

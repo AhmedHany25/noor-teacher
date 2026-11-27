@@ -24,10 +24,12 @@ type Props = {
   avatarName?: string
   session?: Session
   isNext?: boolean
+  /** False for days still to come: attendance cannot be recorded yet. */
+  canRecord?: boolean
   localTimes?: string[]
 }
 
-export function LessonRow({ o, group, title, avatarName, session, isNext, localTimes = [] }: Props) {
+export function LessonRow({ o, group, title, avatarName, session, isNext, canRecord = true, localTimes = [] }: Props) {
   const { repos } = useData()
   const status = lessonStatus(session)
   const href = `/lessons/${o.groupId}/${o.date}`
@@ -65,6 +67,7 @@ export function LessonRow({ o, group, title, avatarName, session, isNext, localT
       )}
 
       {!o.cancelledBy &&
+        canRecord &&
         (group.studentIds.length === 1 ? (
           <span className="att" role="group" aria-label={`حضور ${title}`}>
             {STATUSES.map((s) => (

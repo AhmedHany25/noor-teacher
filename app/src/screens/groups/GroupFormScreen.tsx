@@ -7,7 +7,6 @@ import {
   WEEKDAY_NAMES,
   WEEK_ORDER,
   groupTitle,
-  todayISO,
   validateGroup,
   type Group,
   type GroupErrors,
@@ -45,7 +44,7 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
   const { repos, notify } = useData()
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { now } = useClock()
+  const { today } = useClock()
 
   const [studentIds, setStudentIds] = useState<string[]>(() => {
     if (group) return group.studentIds
@@ -56,7 +55,7 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
     Object.fromEntries((group?.slots ?? []).map((s) => [s.weekday, s.time])),
   )
   const [durationMin, setDurationMin] = useState(group?.durationMin ?? lastGroup?.durationMin ?? 30)
-  const [startDate, setStartDate] = useState(group?.startDate ?? todayISO(now))
+  const [startDate, setStartDate] = useState(group?.startDate ?? today)
   const [name, setName] = useState(group?.name ?? '')
   const [archived, setArchived] = useState(group?.archived ?? false)
   const [errors, setErrors] = useState<GroupErrors>({})

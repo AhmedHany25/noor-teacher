@@ -1,0 +1,507 @@
+/* Groups and dues screens, design v2. Loaded after design-v2.css. */
+
+/* ===== Groups: week strip ===== */
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0.1rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.week-name {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.week-count {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.week-day.is-empty .week-count {
+  color: var(--line);
+}
+
+.week-day.is-today {
+  border-color: var(--gold);
+  box-shadow: inset 0 -3px 0 var(--gold);
+}
+
+.week-day[aria-selected='true'] {
+  border-color: var(--emerald);
+  background: var(--emerald);
+  color: var(--paper);
+}
+
+.week-day[aria-selected='true'] .week-name {
+  color: inherit;
+  opacity: 0.85;
+}
+
+.filter-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -0.25rem 0 0.75rem;
+  font-weight: 700;
+  color: var(--emerald);
+}
+
+/* ===== Groups: cards ===== */
+.group-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .group-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.group-card {
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.group-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.9rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.group-top {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.group-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.group-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.group-payer {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.pill {
+  flex: none;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.day-dots {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dot.is-on {
+  background: var(--emerald);
+  color: var(--paper);
+}
+
+.group-schedule {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.9rem;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+/* ===== Dues: summary hero ===== */
+.dues-hero {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1.1rem 1.1rem;
+  border-radius: 20px;
+  background: var(--band-deep);
+  color: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+.dues-hero .month-nav {
+  margin-bottom: 0.4rem;
+}
+
+.dues-hero .month-title {
+  color: #fff;
+  font-size: 1.6rem;
+}
+
+.dues-hero .icon-btn {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.dues-hero .totals {
+  margin: 0.15rem 0 0;
+}
+
+.dues-hero .totals li {
+  padding: 0;
+  background: none;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.dues-hero .totals li + li::before {
+  content: '·';
+  margin-inline: 0.4rem;
+  opacity: 0.5;
+}
+
+.dues-hero-empty {
+  opacity: 0.85;
+}
+
+.dues-hero-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dues-hero-row span {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.dues-hero-row b {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f3d17c;
+}
+
+/* ===== Dues: payer cards ===== */
+.payer-head {
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.payer-id {
+  flex: 1;
+  min-width: 0;
+}
+
+.payer-lines li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pl-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.pl-detail {
+  align-items: center;
+}
+
+.cycle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cycle-dots {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.cd {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.cd.is-on {
+  background: var(--gold);
+}
+
+.cycle-text {
+  font-size: 0.72rem;
+}
+
+.payer-balance-box {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line);
+}
+
+.paid-bar {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  overflow: hidden;
+}
+
+.paid-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--emerald);
+}
+
+.payer-balance-box .payer-balance {
+  margin-top: 0.45rem;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.btn-wa {
+  gap: 0.4rem;
+  color: #1f9d55;
+}
+
+.btn-wa svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.manage {
+  margin-top: 1.25rem;
+}
+
+.manage-add {
+  align-self: flex-start;
+}
+
+.dues-hero .totals {
+  gap: 0 1.1rem;
+}
+
+.dues-hero .totals li {
+  font-size: 1.75rem;
+}
+
+.dues-hero .totals li + li::before {
+  content: none;
+}
+
+.dues-hero-row b {
+  display: block;
+  line-height: 1.5;
+}
+
+.payer-actions .btn-primary {
+  flex: 1;
+  min-width: 9rem;
+}
+
+.payer-actions .btn-quiet {
+  padding-inline: 0.9rem;
+}
+
+/* ===== Calendar on Today ===== */
+.cal {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.cal-head .icon-btn {
+  width: 2.2rem;
+  height: 2.2rem;
+  font-size: 1.2rem;
+}
+
+.cal-title {
+  font-weight: 800;
+  color: var(--emerald);
+}
+
+.cal-spacer {
+  flex: 1;
+}
+
+.chip {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chip[aria-pressed=true] {
+  border-color: var(--emerald);
+  color: var(--emerald);
+}
+
+.cal-week,
+.cal-month {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.cal-letter {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.1rem;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.cal-week .cal-day {
+  background: var(--paper);
+}
+
+.cal-name {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.cal-num {
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.cal-month .cal-num {
+  font-size: 0.92rem;
+}
+
+.cal-dots {
+  display: flex;
+  gap: 2px;
+  min-height: 5px;
+}
+
+.cal-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.cal-day.is-outside {
+  opacity: 0.35;
+}
+
+.cal-day.is-today {
+  border-color: var(--gold);
+}
+
+.cal-day.is-selected {
+  border-color: var(--emerald);
+  background: var(--emerald);
+  color: var(--paper);
+}
+
+.cal-day.is-selected .cal-name {
+  color: inherit;
+  opacity: 0.85;
+}
+
+.cal-day.is-selected .cal-dots i {
+  background: var(--gold-bright);
+}
+
+/* ===== Lesson page sections ===== */
+.lesson-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.lesson-section-title {
+  font-size: var(--step-1);
+  font-weight: 800;
+  color: var(--emerald);
+}
+
+.reschedule.lesson-section {
+  margin-top: 0;
+  border-top: 1px solid var(--line);
+}

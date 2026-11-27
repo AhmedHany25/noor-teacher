@@ -41,6 +41,24 @@ describe('Groups', () => {
     expect(row).toHaveTextContent('٤٥ دقيقة')
   })
 
+  it('filters groups by a day of the week', async () => {
+    renderApp('/groups', {
+      students: [yusuf, omar],
+      groups: [
+        group({ id: 'g1', studentIds: ['s1'], slots: [{ weekday: 6, time: '09:30' }] }),
+        group({ id: 'g2', studentIds: ['s2'], slots: [{ weekday: 2, time: '19:00' }] }),
+      ],
+    })
+    expect(screen.getByRole('tab', { name: /السبت/ })).toHaveTextContent('١')
+    await userEvent.click(screen.getByRole('tab', { name: /السبت/ }))
+    const items = within(screen.getByRole('list', { name: 'الحلقات' })).getAllByRole('listitem')
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent('يوسف')
+    expect(items[0]).toHaveTextContent('٩:٣٠ ص')
+    await userEvent.click(screen.getByRole('button', { name: 'عرض الكل' }))
+    expect(within(screen.getByRole('list', { name: 'الحلقات' })).getAllByRole('listitem')).toHaveLength(2)
+  })
+
   it('creates a group: pick a student, tick days, set times', async () => {
     const { repos } = renderApp('/groups/new', { students: [yusuf, omar, gone] }, { now: NOW })
     expect(screen.queryByRole('checkbox', { name: 'سالم' })).not.toBeInTheDocument()

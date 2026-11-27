@@ -4,7 +4,6 @@ import { useAuth } from '../../auth/auth'
 import { useAcademies, useData, useGroups, usePayments, useSessions, useStudents } from '../../data/data'
 import { DEFAULT_BASE_CURRENCY } from '../../domain/dues'
 import { exportBackup, parseBackup, type BackupData, type ImportSummary } from '../../domain/importData'
-import { todayISO } from '../../domain/schedule'
 import { useClock } from '../../lib/clock'
 import { toArabicDigits } from '../../lib/format'
 import { getTheme, setTheme, type Theme } from '../../lib/theme'
@@ -114,7 +113,7 @@ function ImportSection() {
 
 function BackupSection() {
   const { repos, notify } = useData()
-  const { now } = useClock()
+  const { today } = useClock()
   const live = [useStudents(), useAcademies(), useGroups(), useSessions(), usePayments()]
   const ready = live.every((l) => !l.loading)
   const [students, academies, groups, sessions, payments] = live.map((l) => l.items)
@@ -131,7 +130,7 @@ function BackupSection() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `noor-backup-${todayISO(now)}.json`
+    a.download = `noor-backup-${today}.json`
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     notify('تم تنزيل النسخة الاحتياطية')

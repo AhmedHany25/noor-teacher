@@ -4,7 +4,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Field } from '../../components/Field'
 import { useAcademies, useData, useGroups, usePayments, useSessions, useStudents } from '../../data/data'
 import { DEFAULT_BASE_CURRENCY, balances, payerKey } from '../../domain/dues'
-import { todayISO } from '../../domain/schedule'
 import { useClock } from '../../lib/clock'
 import { parseNumber } from '../../lib/format'
 
@@ -33,14 +32,14 @@ function PaymentForm({ payers, outstanding }: { payers: Payer[]; outstanding: (k
   const { repos, notify } = useData()
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { now } = useClock()
+  const { today } = useClock()
 
   const initial = payers.find((p) => p.key === params.get('payer')) ?? payers[0]
   const owed = (k?: string) => (k && outstanding(k) > 0 ? String(outstanding(k)) : '')
 
   const [key, setKey] = useState(initial?.key ?? '')
   const [amount, setAmount] = useState(owed(initial?.key))
-  const [date, setDate] = useState(todayISO(now))
+  const [date, setDate] = useState(today)
   const [resetsCycle, setResetsCycle] = useState(initial?.academy ?? false)
   const [note, setNote] = useState('')
   const [error, setError] = useState('')

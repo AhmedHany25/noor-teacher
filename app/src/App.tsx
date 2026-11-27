@@ -4,7 +4,7 @@ import { useAuth } from './auth/auth'
 import { AppShell } from './components/AppShell'
 import { DataProvider } from './data/DataProvider'
 import type { Repos } from './data/repos'
-import { ClockContext, deviceTimeZone } from './lib/clock'
+import { ClockContext, TEACHER_TZ } from './lib/clock'
 import { AcademiesScreen } from './screens/academies/AcademiesScreen'
 import { AcademyFormScreen } from './screens/academies/AcademyFormScreen'
 import { PaymentFormScreen } from './screens/academies/PaymentFormScreen'
@@ -28,7 +28,7 @@ type AppProps = {
 
 export function App({ makeRepos, now, timeZone }: AppProps) {
   const auth = useAuth()
-  const clock = useMemo(() => ({ fixed: now, timeZone: timeZone ?? deviceTimeZone() }), [now, timeZone])
+  const clock = useMemo(() => ({ fixed: now, timeZone: timeZone ?? TEACHER_TZ }), [now, timeZone])
 
   if (auth.status === 'loading') {
     return (

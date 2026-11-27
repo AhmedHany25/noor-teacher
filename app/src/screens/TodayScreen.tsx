@@ -1,45 +1,52 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { Avatar } from '../components/Avatar'
+import { Calendar } from '../components/Calendar'
 import { LessonRow } from '../components/LessonRow'
 import { PageHeader } from '../components/PageHeader'
 import { useGroups, useSessions, useStudents } from '../data/data'
 import { useMissedLessons } from '../data/useMissed'
 import { sessionId } from '../domain/attendance'
 import { countryOf } from '../domain/countries'
-import { groupTitle, occurrencesOn, studentLocalTime, time12, todayISO, type Group, type Occurrence } from '../domain/schedule'
+import { groupTitle, occurrencesOn, studentLocalTime, time12, type Group, type Occurrence } from '../domain/schedule'
 import type { Student } from '../domain/student'
-import { hhmm, useClock } from '../lib/clock'
-import { formatDayName, formatGregorian, formatHijri, toArabicDigits, untilText } from '../lib/format'
+import { dateOf, useClock } from '../lib/clock'
+import { formatDayName, formatGregorian, formatHijri, longDate, toArabicDigits, untilText } from '../lib/format'
 
 const minutesOf = (t: string) => {
   const [h, m] = t.split(':').map(Number)
   return h * 60 + m
 }
 
+/** Route: / — the teacher's hub: a calendar on Egyptian time and the lessons of the chosen day. */
 export function TodayScreen() {
-  const { now, timeZone } = useClock()
+  const { timeZone, today, nowTime } = useClock()
   const { items: groups, loading } = useGroups()
   const { items: students, loading: loadingStudents } = useStudents()
   const { items: sessions } = useSessions()
-  const today = todayISO(now)
-  const nowTime = hhmm(now)
-  const lessons = occurrencesOn(groups, today)
+  const missedAll = useMissedLessons().missed
+  const [selected, setSelected] = useState(today)
+
+  const isToday = selected === today
+  const lessons = occurrencesOn(groups, selected)
   const active = lessons.filter((o) => !o.cancelledBy)
-  const next = active.find((o) => o.time >= nowTime)
+  const next = isToday ? active.find((o) => o.time >= nowTime) : undefined
   const recorded = active.filter((o) => sessions.some((s) => s.id === sessionId(o.groupId, o.date))).length
   // Earlier days only: today's lessons are already on screen.
-  const missed = useMissedLessons().missed.filter((o) => o.date !== today).length
+  const missed = missedAll.filter((o) => o.date !== today).length
   const groupOf = (o: Occurrence) => groups.find((g) => g.id === o.groupId)!
   const firstName = (g: Group) => students.find((s) => s.id === g.studentIds[0])?.name
+  const day = dateOf(selected)
 
   const header = (
     <PageHeader
       big
-      title={formatDayName(now)}
+      title={formatDayName(day)}
       subtitle={
         <>
-          <span>{formatGregorian(now)}</span>
-          <span className="band-gold">{formatHijri(now)}</span>
+          <span>{formatGregorian(day)}</span>
+          <span className="band-gold">{formatHijri(day)}</span>
+          {!isToday && <span>{selected < today ? 'يوم فات' : 'يوم جاي'}</span>}
         </>
       }
     />
@@ -81,46 +88,61 @@ export function TodayScreen() {
     <>
       {header}
 
-      {next ? (
-        <NextLesson o={next} group={groupOf(next)} students={students} teacherTz={timeZone} wait={minutesOf(next.time) - minutesOf(nowTime)} />
-      ) : (
-        active.length > 0 && (
-          <section className="hero hero-done" aria-label="الحصة الجاية">
-            <p className="hero-label">خلصت حصص النهارده</p>
-            <p className="hero-big">{recorded === active.length ? 'كلها متسجلة' : `فاضل تسجيل ${toArabicDigits(active.length - recorded)}`}</p>
-          </section>
-        )
+      <Calendar
+        selected={selected}
+        today={today}
+        onSelect={setSelected}
+        countOn={(d) => occurrencesOn(groups, d).filter((o) => !o.cancelledBy).length}
+      />
+
+      {isToday && (
+        <>
+          {next ? (
+            <NextLesson o={next} group={groupOf(next)} students={students} teacherTz={timeZone} wait={minutesOf(next.time) - minutesOf(nowTime)} />
+          ) : (
+            active.length > 0 && (
+              <section className="hero hero-done" aria-label="الحصة الجاية">
+                <p className="hero-label">خلصت حصص النهارده</p>
+                <p className="hero-big">
+                  {recorded === active.length ? 'كلها متسجلة' : `فاضل تسجيل ${toArabicDigits(active.length - recorded)}`}
+                </p>
+              </section>
+            )
+          )}
+
+          <div className="stats">
+            <div className="stat">
+              <b>{toArabicDigits(active.length)}</b>
+              <span>حصص اليوم</span>
+            </div>
+            <div className="stat stat-good">
+              <b>{toArabicDigits(recorded)}</b>
+              <span>اتسجلت</span>
+            </div>
+            {missed > 0 ? (
+              <Link to="/review" className="stat stat-warn" aria-label={`${toArabicDigits(missed)} حصص فاتت من غير تسجيل`}>
+                <b>{toArabicDigits(missed)}</b>
+                <span>فاتت، سجّلها</span>
+              </Link>
+            ) : (
+              <div className="stat">
+                <b>٠</b>
+                <span>فاتت</span>
+              </div>
+            )}
+          </div>
+        </>
       )}
 
-      <div className="stats">
-        <div className="stat">
-          <b>{toArabicDigits(active.length)}</b>
-          <span>حصص اليوم</span>
-        </div>
-        <div className="stat stat-good">
-          <b>{toArabicDigits(recorded)}</b>
-          <span>اتسجلت</span>
-        </div>
-        {missed > 0 ? (
-          <Link to="/review" className="stat stat-warn" aria-label={`${toArabicDigits(missed)} حصص فاتت من غير تسجيل`}>
-            <b>{toArabicDigits(missed)}</b>
-            <span>فاتت، سجّلها</span>
-          </Link>
-        ) : (
-          <div className="stat">
-            <b>٠</b>
-            <span>فاتت</span>
-          </div>
-        )}
-      </div>
+      {!isToday && <h2 className="day-heading">حصص {longDate(selected)}</h2>}
 
       {lessons.length === 0 ? (
         <section className="empty card">
-          <h2>لا توجد حصص اليوم</h2>
-          <p>يوم راحة. حصصك الجاية هتظهر هنا في يومها.</p>
+          <h2>{isToday ? 'لا توجد حصص اليوم' : 'لا توجد حصص في اليوم ده'}</h2>
+          <p>{isToday ? 'يوم راحة. اختار يوم تاني من الجدول لو حابب تشوف مواعيده.' : 'اختار يوم تاني من الجدول.'}</p>
         </section>
       ) : (
-        <ol className="lessons" aria-label="حصص اليوم">
+        <ol className="lessons" aria-label={isToday ? 'حصص اليوم' : `حصص ${longDate(selected)}`}>
           {lessons.map((o) => {
             const group = groupOf(o)
             return (
@@ -132,6 +154,7 @@ export function TodayScreen() {
                 avatarName={firstName(group)}
                 session={sessions.find((s) => s.id === sessionId(o.groupId, o.date))}
                 isNext={o === next}
+                canRecord={selected <= today}
                 localTimes={localTimes(o, group.studentIds, students, timeZone)}
               />
             )

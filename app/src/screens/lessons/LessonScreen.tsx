@@ -25,6 +25,7 @@ import {
   type Occurrence,
 } from '../../domain/schedule'
 import type { Student } from '../../domain/student'
+import { useClock } from '../../lib/clock'
 import { longDate, toArabicDigits } from '../../lib/format'
 
 const DURATIONS = [15, 20, 30, 40, 45, 60, 90, 120]
@@ -72,6 +73,8 @@ function Lesson({ group, lesson, session, students }: { group: Group; lesson: Oc
   const { repos, notify } = useData()
   const navigate = useNavigate()
   const location = useLocation()
+  const { today } = useClock()
+  const upcoming = lesson.date > today
   const title = groupTitle(group, students)
   const people = group.studentIds.map((id) => students.find((s) => s.id === id) ?? { id, name: 'طالب محذوف' })
 
@@ -166,6 +169,12 @@ function Lesson({ group, lesson, session, students }: { group: Group; lesson: Oc
             </section>
           )}
 
+          <section className="lesson-section card" aria-label="الحضور">
+            <h2 className="lesson-section-title">الحضور</h2>
+            {upcoming ? (
+              <p className="field-hint">الحصة لسه مجاتش. تقدر تسجّل حضورها في يومها.</p>
+            ) : (
+              <>
           {people.map((p) => {
             const a = att[p.id]
             return (
@@ -226,9 +235,13 @@ function Lesson({ group, lesson, session, students }: { group: Group; lesson: Oc
               </button>
             )}
           </div>
+              </>
+            )}
+          </section>
 
           {!lesson.movedFrom && (
-            <section className="reschedule" aria-label="تغيير الموعد">
+            <section className="reschedule lesson-section card" aria-label="تغيير الموعد">
+              <h2 className="lesson-section-title">تغيير الموعد</h2>
               <div className="reschedule-actions">
                 <button type="button" className="btn btn-quiet" onClick={() => setPanel(panel === 'cancel' ? 'none' : 'cancel')}>
                   إلغاء الحصة
@@ -267,6 +280,9 @@ function Lesson({ group, lesson, session, students }: { group: Group; lesson: Oc
                   </button>
                 </div>
               )}
+              <Link to={`/groups/${group.id}`} className="form-link">
+                تعديل الحلقة (الأيام والمواعيد الأساسية)
+              </Link>
             </section>
           )}
         </>
