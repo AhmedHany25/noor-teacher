@@ -4,7 +4,7 @@ import type { Session } from '../domain/attendance'
 import type { Payment } from '../domain/dues'
 import type { Group } from '../domain/schedule'
 import type { Student } from '../domain/student'
-import type { CollectionRepo, Repos } from './repos'
+import type { CollectionRepo, Device, Profile, Repos } from './repos'
 
 export type DataContextValue = {
   repos: Repos
@@ -52,3 +52,23 @@ export const useAcademies = (): Live<Academy> => useLive(useData().repos.academi
 export const useGroups = (): Live<Group> => useLive(useData().repos.groups)
 export const useSessions = (): Live<Session> => useLive(useData().repos.sessions)
 export const usePayments = (): Live<Payment> => useLive(useData().repos.payments)
+export const useDevices = (): Live<Device> => useLive(useData().repos.devices)
+
+/** The teacher's settings document (reminder choices, …). */
+export function useProfile(): { profile: Profile; loading: boolean } {
+  const { repos, notify } = useData()
+  const [state, setState] = useState<{ profile: Profile; loading: boolean }>({ profile: {}, loading: true })
+  const subscribe = repos.profile.subscribe
+  useEffect(
+    () =>
+      subscribe(
+        (profile) => setState({ profile, loading: false }),
+        () => {
+          setState((s) => ({ ...s, loading: false }))
+          notify('تعذّر تحميل الإعدادات.')
+        },
+      ),
+    [subscribe, notify],
+  )
+  return state
+}

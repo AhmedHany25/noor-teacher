@@ -31,6 +31,19 @@ const seed = {
   ],
 }
 
+describe('Month-end reminder', () => {
+  it('points to the monthly reports in the last days of the month', async () => {
+    renderApp('/', seed, { now: NOW })
+    await userEvent.click(screen.getByRole('link', { name: /التقارير الشهرية لـنوفمبر ٢٠٢٦ جاهزة/ }))
+    expect(screen.getByRole('heading', { level: 1, name: 'التقارير الشهرية' })).toBeInTheDocument()
+  })
+
+  it('stays quiet earlier in the month', () => {
+    renderApp('/', seed, { now: new Date(2026, 10, 10, 12, 0) })
+    expect(screen.queryByRole('link', { name: /التقارير الشهرية/ })).not.toBeInTheDocument()
+  })
+})
+
 describe('Today calendar', () => {
   it('shows the week with the number of lessons per day', () => {
     renderApp('/', seed, { now: NOW })

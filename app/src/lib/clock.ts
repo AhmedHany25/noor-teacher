@@ -1,4 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { dateInZone, timeInZone } from '../domain/zone'
+
+export { dateInZone, timeInZone }
 
 /** The teacher works on Egyptian time, whatever time zone the device is set to. */
 export const TEACHER_TZ = 'Africa/Cairo'
@@ -13,31 +16,6 @@ export type Clock = {
 }
 
 export const ClockContext = createContext<{ fixed?: Date; timeZone: string }>({ timeZone: TEACHER_TZ })
-
-function zoneParts(d: Date, timeZone: string) {
-  const f = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hourCycle: 'h23',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-  return Object.fromEntries(f.formatToParts(d).map((p) => [p.type, p.value]))
-}
-
-/** Calendar date of an instant in a time zone, "YYYY-MM-DD". */
-export function dateInZone(d: Date, timeZone: string): string {
-  const p = zoneParts(d, timeZone)
-  return `${p.year}-${p.month}-${p.day}`
-}
-
-/** Wall-clock time of an instant in a time zone, "HH:mm". */
-export function timeInZone(d: Date, timeZone: string): string {
-  const p = zoneParts(d, timeZone)
-  return `${p.hour}:${p.minute}`
-}
 
 /** Noon of a calendar date on this device, safe to pass to date formatters. */
 export function dateOf(iso: string): Date {

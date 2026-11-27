@@ -88,6 +88,7 @@ describe('Student form', () => {
   it('edits an existing student, including changing status and clearing a field', async () => {
     const { repos } = renderApp('/students', { students: [stu({ name: 'عمر', level: 'جزء عم' })] })
     await userEvent.click(screen.getByRole('link', { name: /عمر/ }))
+    await userEvent.click(screen.getByRole('link', { name: 'تعديل البيانات' }))
     expect(screen.getByLabelText('الاسم')).toHaveValue('عمر')
     await userEvent.clear(screen.getByLabelText('المستوى'))
     await userEvent.click(screen.getByRole('radio', { name: 'موقوف' }))

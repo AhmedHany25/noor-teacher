@@ -104,7 +104,7 @@ function StudentForm({ student }: { student?: Student }) {
     if (student) repos.students.update(student.id, input)
     else repos.students.create(input)
     notify('تم حفظ الطالب')
-    navigate('/students')
+    navigate(student ? `/students/${student.id}` : '/students')
   }
 
   return (

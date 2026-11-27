@@ -2,6 +2,7 @@ import type { Academy, AcademyInput } from '../domain/academy'
 import type { Session, SessionInput } from '../domain/attendance'
 import type { Payment, PaymentInput } from '../domain/dues'
 import type { BackupData } from '../domain/importData'
+import type { NotifySettings } from '../domain/reminders'
 import type { Group, GroupInput } from '../domain/schedule'
 import type { Student, StudentInput } from '../domain/student'
 
@@ -23,12 +24,25 @@ export type CollectionRepo<T extends { id: string }, I> = {
   patch: (id: string, fields: Partial<Omit<T, 'id'>>) => void
 }
 
+/** The teacher's own settings document, users/{uid}. */
+export type Profile = { notify?: NotifySettings }
+
+/** A browser that receives reminders, users/{uid}/devices/{token}. */
+export type Device = { id: string; token: string; label: string; createdAt: number }
+
+export type ProfileRepo = {
+  subscribe: (cb: (p: Profile) => void, onError: (e: Error) => void) => Unsubscribe
+  patch: (fields: Partial<Profile>) => void
+}
+
 export type Repos = {
   students: CollectionRepo<Student, StudentInput>
   academies: CollectionRepo<Academy, AcademyInput>
   groups: CollectionRepo<Group, GroupInput>
   sessions: CollectionRepo<Session, SessionInput>
   payments: CollectionRepo<Payment, PaymentInput>
+  devices: CollectionRepo<Device, Omit<Device, 'id'>>
+  profile: ProfileRepo
   /** Writes a whole backup (keeping ids, so importing twice does not duplicate). Returns at once. */
   importAll: (data: BackupData) => void
   /** Old-site data kept for later versions (plans, progress, marks). */

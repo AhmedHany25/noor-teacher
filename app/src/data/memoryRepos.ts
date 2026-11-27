@@ -4,7 +4,7 @@ import type { Payment } from '../domain/dues'
 import type { BackupData } from '../domain/importData'
 import type { Group } from '../domain/schedule'
 import type { Student } from '../domain/student'
-import type { CollectionRepo, Repos } from './repos'
+import type { CollectionRepo, Device, Profile, Repos } from './repos'
 
 type Store<T> = { all: () => T[] }
 
@@ -65,15 +65,18 @@ function memRepo<T extends { id: string }, I extends object>(
 
 /** In-memory repos with the same contract as Firestore, for tests. */
 export function memoryRepos(
-  seed: { students?: Student[]; academies?: Academy[]; groups?: Group[]; sessions?: Session[]; payments?: Payment[] } = {},
+  seed: { students?: Student[]; academies?: Academy[]; groups?: Group[]; sessions?: Session[]; payments?: Payment[]; profile?: Profile } = {},
 ) {
   let legacy: Record<string, unknown> = {}
+  let profile: Profile = seed.profile ?? {}
+  const profileListeners = new Set<(p: Profile) => void>()
   const repos = {
     students: memRepo<Student, Omit<Student, 'id' | 'createdAt'>>('s', seed.students ?? [], () => ({ createdAt: 1 })),
     academies: memRepo<Academy, Omit<Academy, 'id'>>('a', seed.academies ?? []),
     groups: memRepo<Group, Omit<Group, 'id'>>('g', seed.groups ?? []),
     sessions: memRepo<Session, Omit<Session, 'id'>>('x', seed.sessions ?? []),
     payments: memRepo<Payment, Omit<Payment, 'id'>>('p', seed.payments ?? []),
+    devices: memRepo<Device, Omit<Device, 'id'>>('d', []),
   }
   return {
     ...repos,
@@ -85,5 +88,20 @@ export function memoryRepos(
       legacy = { ...legacy, ...data.legacy }
     },
     loadLegacy: async () => legacy,
-  } satisfies Repos
+    profile: {
+      subscribe: (cb: (p: Profile) => void) => {
+        profileListeners.add(cb)
+        cb(profile)
+        return () => {
+          profileListeners.delete(cb)
+        }
+      },
+      patch: (fields: Partial<Profile>) => {
+        profile = { ...profile, ...fields }
+        profileListeners.forEach((l) => l(profile))
+      },
+    },
+    /** Test helper: the profile as stored. */
+    profileNow: () => profile,
+  } satisfies Repos & { profileNow: () => Profile }
 }

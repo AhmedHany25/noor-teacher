@@ -1,3 +1,4 @@
+import type { LessonNote } from './notes'
 import { addDays, occurrencesOn, type CancelledBy, type Group, type GroupException, type LessonKind, type Occurrence } from './schedule'
 
 export type AttendanceStatus = 'p' | 'a' | 'e' // present, absent, excused
@@ -15,6 +16,10 @@ export type Session = {
   attendance: Record<string, StudentAttendance>
   makeupFor?: string
   note?: string
+  /** Per-student lesson notes (memorisation, review, rating, homework). */
+  notes?: Record<string, LessonNote>
+  /** When the parent message was sent, per student (ms since epoch). */
+  sent?: Record<string, number>
   updatedAt: number
 }
 
@@ -48,6 +53,8 @@ export function quickRecord(
     attendance,
     ...(existing?.actualDurationMin !== undefined ? { actualDurationMin: existing.actualDurationMin } : {}),
     ...((existing?.makeupFor ?? occ.makeupFor) ? { makeupFor: existing?.makeupFor ?? occ.makeupFor } : {}),
+    ...(existing?.notes ? { notes: existing.notes } : {}),
+    ...(existing?.sent ? { sent: existing.sent } : {}),
     updatedAt: now,
   }
 }

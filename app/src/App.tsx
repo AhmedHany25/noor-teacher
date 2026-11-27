@@ -15,7 +15,9 @@ import { ReviewScreen } from './screens/lessons/ReviewScreen'
 import { PlannedScreen } from './screens/PlannedScreen'
 import { SettingsScreen } from './screens/settings/SettingsScreen'
 import { SignInScreen } from './screens/SignInScreen'
+import { ReportsScreen } from './screens/students/ReportsScreen'
 import { StudentFormScreen } from './screens/students/StudentFormScreen'
+import { StudentProfileScreen } from './screens/students/StudentProfileScreen'
 import { StudentsScreen } from './screens/students/StudentsScreen'
 import { TodayScreen } from './screens/TodayScreen'
 
@@ -57,7 +59,9 @@ function SignedInApp({ uid, makeRepos }: { uid: string; makeRepos: (uid: string)
           <Route index element={<TodayScreen />} />
           <Route path="students" element={<StudentsScreen />} />
           <Route path="students/new" element={<StudentFormScreen />} />
-          <Route path="students/:id" element={<StudentFormScreen />} />
+          <Route path="students/:id" element={<StudentProfileScreen />} />
+          <Route path="students/:id/edit" element={<StudentFormScreen />} />
+          <Route path="reports" element={<ReportsScreen />} />
           <Route path="groups" element={<GroupsScreen />} />
           <Route path="groups/new" element={<GroupFormScreen />} />
           <Route path="groups/:id" element={<GroupFormScreen />} />

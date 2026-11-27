@@ -8,7 +8,7 @@ import { useGroups, useSessions, useStudents } from '../data/data'
 import { useMissedLessons } from '../data/useMissed'
 import { sessionId } from '../domain/attendance'
 import { countryOf } from '../domain/countries'
-import { groupTitle, occurrencesOn, studentLocalTime, time12, type Group, type Occurrence } from '../domain/schedule'
+import { groupTitle, monthLabel, occurrencesOn, studentLocalTime, time12, type Group, type Occurrence } from '../domain/schedule'
 import type { Student } from '../domain/student'
 import { dateOf, useClock } from '../lib/clock'
 import { formatDayName, formatGregorian, formatHijri, longDate, toArabicDigits, untilText } from '../lib/format'
@@ -37,6 +37,9 @@ export function TodayScreen() {
   const groupOf = (o: Occurrence) => groups.find((g) => g.id === o.groupId)!
   const firstName = (g: Group) => students.find((s) => s.id === g.studentIds[0])?.name
   const day = dateOf(selected)
+  // In the last days of the month, remind about monthly reports not sent yet.
+  const activeStudents = students.filter((x) => x.status === 'active').length
+  const reportsDue = Number(today.slice(8)) >= 25 ? students.filter((x) => x.status === 'active' && !x.reportsSent?.[today.slice(0, 7)]).length : 0
 
   const header = (
     <PageHeader
@@ -108,6 +111,12 @@ export function TodayScreen() {
                 </p>
               </section>
             )
+          )}
+
+          {reportsDue > 0 && (
+            <Link to="/reports" className="notice">
+              التقارير الشهرية لـ{monthLabel(today.slice(0, 7))} جاهزة: فاضل {toArabicDigits(reportsDue)} من {toArabicDigits(activeStudents)}
+            </Link>
           )}
 
           <div className="stats">

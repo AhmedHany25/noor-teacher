@@ -11,7 +11,7 @@ import {
   type DocumentData,
   type Firestore,
 } from 'firebase/firestore'
-import type { CollectionRepo, Repos } from './repos'
+import type { CollectionRepo, Profile, Repos } from './repos'
 
 /** Firestore rejects `undefined`: on create drop such keys, on update delete the stored field. */
 const forCreate = (input: object): DocumentData =>
@@ -63,6 +63,13 @@ export function firestoreRepos(db: Firestore, uid: string, onWriteError: (e: Err
     groups: repo(db, [...base, 'groups'], onWriteError),
     sessions: repo(db, [...base, 'sessions'], onWriteError),
     payments: repo(db, [...base, 'payments'], onWriteError),
+    devices: repo(db, [...base, 'devices'], onWriteError),
+    profile: {
+      subscribe: (cb, onError) => onSnapshot(doc(db, ...base), (snap) => cb((snap.data() as Profile | undefined) ?? {}), onError),
+      patch: (fields) => {
+        setDoc(doc(db, ...base), fields, { merge: true }).catch(onWriteError)
+      },
+    },
 
     importAll: (data) => {
       const writes: [string, string, DocumentData][] = []

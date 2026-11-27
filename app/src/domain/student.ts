@@ -18,10 +18,12 @@ export type Student = {
   createdAt: number
   /** Private students only: start of the current unpaid batch (see Academy.trackFrom). */
   trackFrom?: string
+  /** When each monthly report was sent to the parent: month (YYYY-MM) → ms since epoch. */
+  reportsSent?: Record<string, number>
 }
 
 /** The editable part of a student (what the form produces). */
-export type StudentInput = Omit<Student, 'id' | 'createdAt' | 'trackFrom'>
+export type StudentInput = Omit<Student, 'id' | 'createdAt' | 'trackFrom' | 'reportsSent'>
 
 export const STATUS_LABELS: Record<StudentStatus, string> = {
   active: 'نشط',

@@ -64,6 +64,20 @@ describe('quickRecord', () => {
     expect(s).toMatchObject({ actualDurationMin: 45, makeupFor: '2026-11-20', kind: 'makeup' })
     expect(s.attendance.s1).toEqual({ status: 'e', billable: false })
   })
+
+  it('keeps the lesson notes when attendance changes', () => {
+    const existing: Session = {
+      id: sessionId('g1', FRI),
+      groupId: 'g1',
+      date: FRI,
+      time: '17:00',
+      kind: 'regular',
+      attendance: { s1: { status: 'p', billable: true } },
+      notes: { s1: { rating: 'excellent' } },
+      updatedAt: 1,
+    }
+    expect(quickRecord(occ, group(), 'a', existing, 2).notes).toEqual({ s1: { rating: 'excellent' } })
+  })
 })
 
 describe('lesson exceptions', () => {

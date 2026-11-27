@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { Field } from '../../components/Field'
+import { LessonNotes } from '../../components/LessonNotes'
+import { ParentMessage } from '../../components/ParentMessage'
 import { PageHeader } from '../../components/PageHeader'
 import { useData, useGroups, useSessions, useStudents } from '../../data/data'
 import {
@@ -61,7 +63,7 @@ export function LessonScreen() {
     durationMin: group.durationMin,
     kind: session!.kind,
   }
-  return <Lesson key={`${groupId}-${date}`} group={group} lesson={lesson} session={session} students={students} />
+  return <Lesson key={`${groupId}-${date}`} group={group} lesson={lesson} session={session} students={students} sessions={sessions} />
 }
 
 function groupInput(g: Group, exceptions: Record<string, GroupException>) {
@@ -69,7 +71,19 @@ function groupInput(g: Group, exceptions: Record<string, GroupException>) {
   return { ...rest, exceptions }
 }
 
-function Lesson({ group, lesson, session, students }: { group: Group; lesson: Occurrence; session?: Session; students: Student[] }) {
+function Lesson({
+  group,
+  lesson,
+  session,
+  students,
+  sessions,
+}: {
+  group: Group
+  lesson: Occurrence
+  session?: Session
+  students: Student[]
+  sessions: Session[]
+}) {
   const { repos, notify } = useData()
   const navigate = useNavigate()
   const location = useLocation()
@@ -105,6 +119,8 @@ function Lesson({ group, lesson, session, students }: { group: Group; lesson: Oc
       actualDurationMin: duration !== lesson.durationMin ? duration : undefined,
       makeupFor: session?.makeupFor ?? lesson.makeupFor,
       note: session?.note,
+      notes: session?.notes,
+      sent: session?.sent,
       updatedAt: stamp(),
     })
     notify('تم حفظ الحضور')
@@ -238,6 +254,16 @@ function Lesson({ group, lesson, session, students }: { group: Group; lesson: Oc
               </>
             )}
           </section>
+
+          {session &&
+            people
+              .filter((p) => session.attendance[p.id])
+              .map((p) => (
+                <Fragment key={`${session.id}-${p.id}`}>
+                  {session.attendance[p.id].status === 'p' && <LessonNotes session={session} student={p} sessions={sessions} />}
+                  <ParentMessage session={session} student={p} />
+                </Fragment>
+              ))}
 
           {!lesson.movedFrom && (
             <section className="reschedule lesson-section card" aria-label="تغيير الموعد">
