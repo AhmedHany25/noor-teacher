@@ -10,7 +10,6 @@ function setup(push: Partial<PushApi> = {}) {
   const api: PushApi = {
     supported: () => true,
     enable: vi.fn(async () => 'token-123'),
-    test: vi.fn(async () => {}),
     label: () => 'Android، Chrome',
     ...push,
   }
@@ -31,6 +30,15 @@ describe('Notification settings', () => {
     expect(repos.devices.all()).toMatchObject([{ id: 'token-123', token: 'token-123', label: 'Android، Chrome' }])
     expect(repos.profileNow().notify).toMatchObject({ beforeOn: true, beforeMinutes: 15, eodOn: true, eodTime: '21:00', morningOn: false })
     expect(screen.getByText(/مفعّلة على الجهاز ده/)).toBeInTheDocument()
+  })
+
+  it('asks the server for a test notification', async () => {
+    const { repos } = setup()
+    await userEvent.click(screen.getByRole('button', { name: 'تفعيل الإشعارات على الجهاز ده' }))
+    await userEvent.click(screen.getByRole('button', { name: 'جرّب إشعار' }))
+    expect(repos.profileNow().testPushAt).toEqual(expect.any(Number))
+    expect(screen.getByText(/مستني الإشعار التجريبي/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'جرّب إشعار' })).toBeDisabled()
   })
 
   it('explains why it could not be enabled', async () => {

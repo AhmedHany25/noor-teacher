@@ -6,14 +6,13 @@ import { DEFAULT_BASE_CURRENCY } from '../../domain/dues'
 import { exportBackup, parseBackup, type BackupData, type ImportSummary } from '../../domain/importData'
 import { useClock } from '../../lib/clock'
 import { toArabicDigits } from '../../lib/format'
-import { deviceLabel, pushSupported, testNotification } from '../../lib/pushSupport'
+import { deviceLabel, pushSupported } from '../../lib/pushSupport'
 import { getTheme, setTheme, type Theme } from '../../lib/theme'
 import { NotificationsSection, type PushApi } from './NotificationsSection'
 
 const pushApi: PushApi = {
   supported: pushSupported,
   enable: () => import('../../lib/push').then((m) => m.enablePush()),
-  test: testNotification,
   label: () => deviceLabel(),
 }
 

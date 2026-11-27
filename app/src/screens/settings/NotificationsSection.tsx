@@ -8,7 +8,6 @@ import { toArabicDigits } from '../../lib/format'
 export type PushApi = {
   supported: () => boolean
   enable: () => Promise<string>
-  test: () => Promise<void>
   label: () => string
 }
 
@@ -55,6 +54,11 @@ export function NotificationsSection({ push }: { push: PushApi }) {
     }
   }
 
+  function requestTest() {
+    repos.profile.patch({ testPushAt: Date.now() })
+    notify('هيوصلك إشعار تجريبي خلال ٥ دقايق')
+  }
+
   function disable() {
     if (token) repos.devices.remove(token)
     try {
@@ -75,8 +79,8 @@ export function NotificationsSection({ push }: { push: PushApi }) {
       ) : thisDevice ? (
         <div className="notify-status">
           <span className="tag tag-sent">مفعّلة على الجهاز ده ({thisDevice.label})</span>
-          <button type="button" className="link-btn" onClick={() => void push.test()}>
-            تجربة
+          <button type="button" className="link-btn" onClick={requestTest} disabled={!!profile.testPushAt}>
+            جرّب إشعار
           </button>
           <button type="button" className="link-btn" onClick={disable}>
             قفلها هنا
@@ -89,6 +93,11 @@ export function NotificationsSection({ push }: { push: PushApi }) {
             {busy ? 'جارٍ التفعيل…' : 'تفعيل الإشعارات على الجهاز ده'}
           </button>
         </>
+      )}
+      {thisDevice && profile.testPushAt && (
+        <p className="field-hint settings-hint" role="status">
+          مستني الإشعار التجريبي، بيوصل خلال ٥ دقايق على كل أجهزتك. لو ماوصلش، افتح إعدادات الموبايل وشوف إن إشعارات Chrome مسموحة.
+        </p>
       )}
       {error && (
         <p className="field-error" role="alert">

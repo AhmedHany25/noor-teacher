@@ -6,11 +6,11 @@
  * Needs FIREBASE_SERVICE_ACCOUNT (the service account JSON). DRY_RUN=1 prints instead of sending.
  */
 import { cert, initializeApp, type ServiceAccount } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { FieldValue, getFirestore, type DocumentReference } from 'firebase-admin/firestore'
 import { getMessaging } from 'firebase-admin/messaging'
 import type { Academy } from '../src/domain/academy'
 import type { Session } from '../src/domain/attendance'
-import { DEFAULT_NOTIFY, dueReminders, type NotifySettings } from '../src/domain/reminders'
+import { DEFAULT_NOTIFY, dueReminders, type NotifySettings, type Reminder } from '../src/domain/reminders'
 import type { Group } from '../src/domain/schedule'
 import type { Student } from '../src/domain/student'
 import { dateInZone, timeInZone } from '../src/domain/zone'
@@ -32,17 +32,24 @@ async function main() {
   const now = new Date()
   const today = dateInZone(now, TZ)
   const nowTime = timeInZone(now, TZ)
-  // Nobody needs reminders in the small hours; skip the reads.
-  if (nowTime < '05:00') {
-    console.log(`${today} ${nowTime}: quiet hours.`)
-    return
-  }
+  // Nobody needs reminders in the small hours (a test the teacher asked for still goes out).
+  const quiet = nowTime < '05:00'
 
   const users = await db.collection('users').listDocuments()
   let sentCount = 0
   for (const user of users) {
     const devices = await user.collection('devices').get()
     if (devices.empty) continue
+    const tokens = devices.docs.map((d) => d.id)
+
+    // A test notification requested from Settings.
+    const testAt = (await user.get()).data()?.testPushAt as number | undefined
+    if (testAt) {
+      const r = { key: `test:${testAt}`, title: 'إشعار تجريبي', body: 'كده الإشعارات شغالة وبتوصلك حتى والتطبيق مقفول.', url: '/settings' }
+      sentCount += await deliver(user, tokens, r, today)
+      await user.update({ testPushAt: FieldValue.delete() })
+    }
+    if (quiet) continue
 
     const [profile, groupsSnap, studentsSnap, sessionsSnap, logSnap, academiesSnap] = await Promise.all([
       user.get(),
@@ -68,29 +75,34 @@ async function main() {
     })
     if (!due.length) continue
 
-    const tokens = devices.docs.map((d) => d.id)
-    for (const r of due) {
-      if (DRY_RUN) {
-        console.log(`[dry run] ${user.id}: ${r.title} — ${r.body}`)
-        continue
-      }
-      const res = await messaging.sendEachForMulticast({
-        tokens,
-        webpush: {
-          headers: { Urgency: 'high', TTL: '1800' },
-          data: { title: r.title, body: r.body, url: r.url, tag: r.key },
-        },
-      })
-      // Forget browsers that no longer accept pushes.
-      await Promise.all(
-        res.responses.map((x, i) => (!x.success && STALE_TOKEN.has(x.error?.code ?? '') ? user.collection('devices').doc(tokens[i]).delete() : null)),
-      )
-      // Log by key so the next run does not send it again; the app shows this log under the bell.
-      await user.collection('notifyLog').doc(r.key).set({ date: today, at: Date.now(), delivered: res.successCount, title: r.title, body: r.body, url: r.url })
-      sentCount += res.successCount
-    }
+    for (const r of due) sentCount += await deliver(user, tokens, r, today)
   }
-  console.log(`${today} ${nowTime}: ${sentCount} notification(s) delivered.`)
+  console.log(`${today} ${nowTime}${quiet ? ' (quiet hours)' : ''}: ${sentCount} notification(s) delivered.`)
+
+  /** Push one notification to all the teacher's devices and log it (the app shows the log under the bell). */
+  async function deliver(user: DocumentReference, tokens: string[], r: Pick<Reminder, 'key' | 'title' | 'body' | 'url'>, date: string) {
+    if (DRY_RUN) {
+      console.log(`[dry run] ${user.id}: ${r.title} — ${r.body}`)
+      return 0
+    }
+    const res = await messaging.sendEachForMulticast({
+      tokens,
+      webpush: {
+        headers: { Urgency: 'high', TTL: '1800' },
+        data: { title: r.title, body: r.body, url: r.url, tag: r.key },
+      },
+    })
+    for (const [i, x] of res.responses.entries()) {
+      if (!x.success) console.log(`device ${i + 1}: ${x.error?.code}`)
+    }
+    // Forget browsers that no longer accept pushes.
+    await Promise.all(
+      res.responses.map((x, i) => (!x.success && STALE_TOKEN.has(x.error?.code ?? '') ? user.collection('devices').doc(tokens[i]).delete() : null)),
+    )
+    // Log by key so the next run does not send it again.
+    await user.collection('notifyLog').doc(r.key).set({ date, at: Date.now(), delivered: res.successCount, title: r.title, body: r.body, url: r.url })
+    return res.successCount
+  }
 }
 
 main().catch((e) => {

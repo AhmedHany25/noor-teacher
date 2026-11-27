@@ -11,14 +11,3 @@ export function deviceLabel(ua = navigator.userAgent): string {
   const browser = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : ''
   return browser ? `${os}، ${browser}` : os
 }
-
-/** Shows a notification from this device right away, to check that it appears. */
-export async function testNotification(): Promise<void> {
-  const registration = await navigator.serviceWorker.ready
-  await registration.showNotification('نور القرآن', {
-    body: 'كده الإشعارات شغالة على الجهاز ده.',
-    icon: '/pwa-192x192.png',
-    lang: 'ar',
-    dir: 'rtl',
-  })
-}

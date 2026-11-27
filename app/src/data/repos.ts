@@ -31,6 +31,8 @@ export type Profile = {
   notifySeenAt?: number
   /** Working hours for the free-time view, Egypt time "HH:mm". */
   workHours?: { from: string; to: string }
+  /** The teacher asked for a test notification at this time (ms); the sender delivers it and clears it. */
+  testPushAt?: number
 }
 
 /** When a student reminder was sent, users/{uid}/studentReminders/{key}. */
