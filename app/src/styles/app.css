@@ -1,0 +1,256 @@
+/* ===== Tokens ===== */
+:root {
+  --emerald: #0a6b54;
+  --emerald-strong: #075242;
+  --emerald-soft: #e3efe9;
+  --gold: #c9962e;
+  --ink: #12302a;
+  --ink-muted: #557069;
+  --paper: #f3f6f2;
+  --surface: #ffffff;
+  --line: #d8e2dc;
+  --focus: #c9962e;
+
+  --font-ui: 'Cairo', system-ui, sans-serif;
+  --font-display: 'Amiri', 'Cairo', serif;
+
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.6rem;
+  --step-4: 3rem;
+
+  --rail-width: 15rem;
+  --tabbar-height: 4.25rem;
+  --radius-control: 0.75rem;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --emerald: #3fbf95;
+    --emerald-strong: #6fd6b2;
+    --emerald-soft: #173a31;
+    --gold: #e2b65a;
+    --ink: #e6efea;
+    --ink-muted: #9db3ab;
+    --paper: #0d1a17;
+    --surface: #13241f;
+    --line: #23392f;
+    color-scheme: dark;
+  }
+}
+
+/* ===== Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.7;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--emerald);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ===== Shell ===== */
+.shell {
+  min-height: 100dvh;
+}
+
+.shell-main {
+  max-width: 46rem;
+  margin-inline: auto;
+  padding: 1.25rem 1rem calc(var(--tabbar-height) + 1.5rem + env(safe-area-inset-bottom));
+}
+
+.nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.nav-brand {
+  display: none;
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nav-link svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.nav-link.active {
+  color: var(--emerald);
+}
+
+@media (min-width: 900px) {
+  .shell {
+    display: grid;
+    grid-template-columns: var(--rail-width) 1fr;
+  }
+
+  .nav {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    height: 100dvh;
+    padding: 1.5rem 0.75rem;
+    border-top: 0;
+    border-inline-end: 1px solid var(--line);
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0 0.75rem 1.5rem;
+    font-family: var(--font-display);
+    font-size: var(--step-1);
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .nav-brand img {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+  }
+
+  .nav-link {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-control);
+    font-size: var(--step-0);
+  }
+
+  .nav-link:hover {
+    background: var(--emerald-soft);
+  }
+
+  .nav-link.active {
+    background: var(--emerald-soft);
+  }
+
+  .shell-main {
+    width: 100%;
+    padding: 2.5rem 2rem;
+  }
+}
+
+/* ===== Screens ===== */
+.screen-title {
+  font-size: var(--step-2);
+  font-weight: 700;
+  line-height: 1.3;
+  margin-bottom: 1.5rem;
+}
+
+/* The one bold element: the day, set in Amiri like a page heading in a mushaf */
+.today-head {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 2px solid var(--emerald);
+}
+
+.today-day {
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--emerald);
+}
+
+.today-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.5rem;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.today-dates .hijri {
+  color: var(--gold);
+}
+
+.empty {
+  padding: 2rem 0;
+  max-width: 34rem;
+}
+
+.empty h2 {
+  font-size: var(--step-1);
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.empty p {
+  color: var(--ink-muted);
+}
+
+.empty .soon {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  background: var(--emerald-soft);
+  color: var(--emerald-strong);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
