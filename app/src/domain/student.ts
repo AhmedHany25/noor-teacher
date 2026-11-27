@@ -3,6 +3,8 @@ import { COUNTRIES, countryOf } from './countries'
 export type PayMode = 'session' | 'hour' | 'month'
 export type StudentStatus = 'active' | 'paused' | 'left'
 
+export type OpeningLessons = { count: number; date: string; minutes: number }
+
 export type Student = {
   id: string
   name: string
@@ -18,12 +20,16 @@ export type Student = {
   createdAt: number
   /** Private students only: start of the current unpaid batch (see Academy.trackFrom). */
   trackFrom?: string
+  /** Private students: bill after this many lessons (empty = no fixed count). Overrides the academy. */
+  cycleLessons?: number
+  /** Lessons taken in the current unpaid batch before using the app; count in dues until the next payment. */
+  openingLessons?: OpeningLessons
   /** When each monthly report was sent to the parent: month (YYYY-MM) → ms since epoch. */
   reportsSent?: Record<string, number>
 }
 
 /** The editable part of a student (what the form produces). */
-export type StudentInput = Omit<Student, 'id' | 'createdAt' | 'trackFrom' | 'reportsSent'>
+export type StudentInput = Omit<Student, 'id' | 'createdAt' | 'trackFrom' | 'reportsSent' | 'openingLessons'>
 
 export const STATUS_LABELS: Record<StudentStatus, string> = {
   active: 'نشط',

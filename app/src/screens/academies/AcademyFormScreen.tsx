@@ -36,6 +36,7 @@ function AcademyForm({ academy, others }: { academy?: Academy; others: Academy[]
   const [rate, setRate] = useState(academy ? String(academy.rate) : '')
   const [archived, setArchived] = useState(academy?.archived ?? false)
   const [remindHours, setRemindHours] = useState(academy?.remindHours ?? 0)
+  const [cycle, setCycle] = useState(academy?.cycleLessons ? String(academy.cycleLessons) : '')
   const [errors, setErrors] = useState<AcademyErrors>({})
 
   function save(e: FormEvent) {
@@ -47,6 +48,7 @@ function AcademyForm({ academy, others }: { academy?: Academy; others: Academy[]
       rate: parseNumber(rate) ?? Number.NaN,
       archived,
       remindHours: remindHours || undefined,
+      cycleLessons: Math.floor(Number(cycle)) > 0 ? Math.floor(Number(cycle)) : undefined,
     }
     const found = validateAcademy(input, others)
     setErrors(found)
@@ -90,6 +92,10 @@ function AcademyForm({ academy, others }: { academy?: Academy; others: Academy[]
           </datalist>
         </Field>
       </div>
+
+      <Field id="cycle" label="بتحاسب كل كام حصة؟" hint="مثلًا ٨ أو ١٢. سيبه فاضي لو بتحاسب بالشهر أو من غير عدد ثابت.">
+        <input id="cycle" type="number" inputMode="numeric" min={0} value={cycle} onChange={(e) => setCycle(e.target.value)} />
+      </Field>
 
       <Field id="remind" label="تذكير الطالب قبل الحصة" hint="لو الأكاديمية بتشترط تذكّر الطالب بالحلقة. هيوصلك إشعار في الميعاد ورسالة جاهزة.">
         <select id="remind" value={remindHours} onChange={(e) => setRemindHours(Number(e.target.value))}>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Academy } from './academy'
 import type { Session } from './attendance'
-import { balances, batchStart, cycleCount, groupBatchStart, monthDues, payerKey, type Payment } from './dues'
+import { balances, batchStart, cycleTarget, groupBatchStart, monthDues, payerBatch, payerKey, type Payment } from './dues'
 import type { Group } from './schedule'
 import type { Student } from './student'
 
@@ -149,9 +149,59 @@ describe('balances and cycle', () => {
     expect(balances(input, [paid]).get('a1')).toEqual({ earned: 120, received: 80, outstanding: 40 })
   })
 
-  it('counts billable regular lessons since the last cycle reset for the payer', () => {
-    expect(cycleCount('s1', 'a1', input.sessions, [paid])).toBe(1)
-    expect(cycleCount('s1', 'a1', input.sessions, [])).toBe(3)
+})
+
+describe('current batch', () => {
+  const P = { status: 'p' as const, billable: true }
+  const g = group('g1', ['s1', 's2'], 30)
+  const pay = (date: string, over: Partial<Payment> = {}): Payment => ({ id: date, payerKey: 'a1', amount: 80, currency: 'ريال', date, resetsCycle: true, ...over })
+  const base = {
+    students: [stu('s1'), stu('s2')],
+    academies: [{ ...furqan, cycleLessons: 8 }],
+    groups: [g],
+    sessions: [
+      ses('g1', '2026-10-30', { s1: P }),
+      ses('g1', '2026-11-06', { s1: P, s2: P }),
+      ses('g1', '2026-11-13', { s1: P }),
+    ],
+    baseCurrency: 'جنيه',
+  }
+
+  it('counts lessons after the last payment that closed the batch', () => {
+    const b = payerBatch('a1', base, [pay('2026-10-31')])
+    expect(b.start).toBe('2026-11-01')
+    expect(b.lessons).toBe(3)
+    expect(b.total).toBe(120)
+    expect(b.lines.map((l) => [l.studentId, l.lessons, l.target])).toEqual([
+      ['s1', 2, 8],
+      ['s2', 1, 8],
+    ])
+  })
+
+  it('a partial payment does not close the batch', () => {
+    expect(payerBatch('a1', base, [pay('2026-11-07', { resetsCycle: false })]).lessons).toBe(4)
+    expect(payerBatch('a1', base, [pay('2026-11-07')]).lessons).toBe(1)
+  })
+
+  it('a later payment wins over a start date set by hand', () => {
+    const academies = [{ ...base.academies[0], trackFrom: '2026-10-01' }]
+    expect(batchStart('a1', academies, [], [pay('2026-11-07')])).toBe('2026-11-08')
+    expect(batchStart('a1', academies, [], [pay('2026-09-07')])).toBe('2026-10-01')
+  })
+
+  it('adds lessons taken before the app to the batch and to the dues', () => {
+    const students = [stu('s1', { openingLessons: { count: 5, date: '2026-11-01', minutes: 150 } }), stu('s2')]
+    const b = payerBatch('a1', { ...base, students }, [pay('2026-10-31')])
+    expect(b.lines[0].lessons).toBe(7)
+    expect(monthDues({ ...base, students, month: '2026-11' })[0].lines[0]).toMatchObject({ lessons: 7, minutes: 210, amount: 280 })
+    // once paid, the opening lessons belong to the closed batch
+    expect(payerBatch('a1', { ...base, students }, [pay('2026-11-14')]).lessons).toBe(0)
+  })
+
+  it('takes the lesson count per batch from the student, then the academy', () => {
+    expect(cycleTarget(stu('s1'), [{ ...furqan, cycleLessons: 12 }])).toBe(12)
+    expect(cycleTarget(stu('s1', { cycleLessons: 4 }), [{ ...furqan, cycleLessons: 12 }])).toBe(4)
+    expect(cycleTarget(stu('s1'), [furqan])).toBeUndefined()
   })
 })
 

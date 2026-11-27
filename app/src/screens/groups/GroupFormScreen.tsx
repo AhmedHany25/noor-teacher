@@ -58,6 +58,7 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
   const [startDate, setStartDate] = useState(group?.startDate ?? today)
   const [name, setName] = useState(group?.name ?? '')
   const [archived, setArchived] = useState(group?.archived ?? false)
+  const [taken, setTaken] = useState('')
   const [errors, setErrors] = useState<GroupErrors>({})
 
   // Students to choose from: active ones, plus anyone already in this group.
@@ -97,7 +98,14 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
     setErrors(found)
     if (Object.keys(found).length) return
     if (group) repos.groups.update(group.id, input)
-    else repos.groups.create(input)
+    else {
+      repos.groups.create(input)
+      const count = Math.floor(Number(taken))
+      if (count > 0) {
+        const date = startDate < today ? startDate : today
+        for (const sid of studentIds) repos.students.patch(sid, { openingLessons: { count, date, minutes: count * durationMin } })
+      }
+    }
     notify('تم حفظ الحلقة')
     navigate('/groups')
   }
@@ -160,6 +168,16 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
           <input id="start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </Field>
       </div>
+
+      {!group && (
+        <Field
+          id="taken"
+          label="اتاخد كام حصة في الدفعة الحالية قبل التطبيق؟"
+          hint="اختياري. الحصص اللي اتعملت ولسه ماتحاسبتش عليها، عشان العدّ يكمل من بعدها. بتتقفل مع أول مبلغ تستلمه."
+        >
+          <input id="taken" type="number" inputMode="numeric" min={0} value={taken} onChange={(e) => setTaken(e.target.value)} />
+        </Field>
+      )}
 
       <Field id="gname" label="اسم الحلقة" hint="اختياري. لو سبته فاضي هيظهر اسم الطالب.">
         <input id="gname" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />

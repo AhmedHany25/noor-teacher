@@ -3,7 +3,8 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Field } from '../../components/Field'
 import { parseNumber } from '../../lib/format'
-import { useAcademies, useData, useStudents } from '../../data/data'
+import { useAcademies, useData, useGroups, useStudents } from '../../data/data'
+import { useClock } from '../../lib/clock'
 import { COUNTRIES } from '../../domain/countries'
 import {
   PAY_MODE_LABELS,
@@ -23,6 +24,8 @@ type Draft = {
   academyId: string
   payMode: string
   rate: string
+  cycleLessons: string
+  opening: string
   level: string
   age: string
   notes: string
@@ -37,12 +40,17 @@ function toDraft(s?: Student): Draft {
     academyId: s?.academyId ?? '',
     payMode: s?.payMode ?? '',
     rate: s?.rate === undefined ? '' : String(s.rate),
+    cycleLessons: s?.cycleLessons ? String(s.cycleLessons) : '',
+    opening: s?.openingLessons ? String(s.openingLessons.count) : '',
     level: s?.level ?? '',
     age: s?.age === undefined ? '' : String(s.age),
     notes: s?.notes ?? '',
     status: s?.status ?? 'active',
   }
 }
+
+/** A whole positive number, or undefined. */
+const count = (v: string) => (Math.floor(Number(v)) > 0 ? Math.floor(Number(v)) : undefined)
 
 const opt = (v: string) => (v.trim() ? v.trim() : undefined)
 
@@ -54,6 +62,7 @@ function toInput(d: Draft): StudentInput {
     academyId: d.academyId || null,
     payMode: (d.payMode || undefined) as PayMode | undefined,
     rate: parseNumber(d.rate),
+    cycleLessons: count(d.cycleLessons),
     level: opt(d.level),
     age: parseNumber(d.age),
     notes: opt(d.notes),
@@ -85,6 +94,8 @@ export function StudentFormScreen() {
 function StudentForm({ student }: { student?: Student }) {
   const { repos, notify } = useData()
   const { items: academies } = useAcademies()
+  const { items: groups } = useGroups()
+  const { today } = useClock()
   const navigate = useNavigate()
   const [draft, setDraft] = useState<Draft>(() => toDraft(student))
   const [errors, setErrors] = useState<StudentErrors>({})
@@ -92,7 +103,7 @@ function StudentForm({ student }: { student?: Student }) {
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const payers = academies.filter((a) => !a.archived || a.id === student?.academyId)
   // Optional details start folded unless the student already has some; errors inside force them open.
-  const [moreOpen, setMoreOpen] = useState(() => !!(draft.level || draft.age || draft.payMode || draft.rate || draft.notes))
+  const [moreOpen, setMoreOpen] = useState(() => !!(draft.level || draft.age || draft.payMode || draft.rate || draft.cycleLessons || draft.opening || draft.notes))
   const showMore = moreOpen || !!(errors.age || errors.rate)
 
   function save(e: FormEvent) {
@@ -101,8 +112,16 @@ function StudentForm({ student }: { student?: Student }) {
     const found = validateStudent(input)
     setErrors(found)
     if (Object.keys(found).length) return
-    if (student) repos.students.update(student.id, input)
-    else repos.students.create(input)
+    if (student) {
+      repos.students.update(student.id, input)
+      const n = count(draft.opening)
+      if (n !== student.openingLessons?.count) {
+        const duration = groups.find((g) => !g.archived && g.studentIds.includes(student.id))?.durationMin ?? 30
+        repos.students.patch(student.id, {
+          openingLessons: n ? { count: n, date: student.openingLessons?.date ?? today, minutes: n * duration } : undefined,
+        })
+      }
+    } else repos.students.create(input)
     notify('تم حفظ الطالب')
     navigate(student ? `/students/${student.id}` : '/students')
   }
@@ -176,7 +195,7 @@ function StudentForm({ student }: { student?: Student }) {
       </div>
 
       <fieldset className="field form-group">
-        <legend>سعر خاص لهذا الطالب</legend>
+        <legend>الحساب الخاص بالطالب</legend>
         <p className="field-hint">اتركه فارغًا ليُحسب بسعر جهة الدفع.</p>
         <div className="form-row">
           <Field id="payMode" label="طريقة الحساب">
@@ -193,6 +212,14 @@ function StudentForm({ student }: { student?: Student }) {
             <input id="rate" inputMode="decimal" value={draft.rate} onChange={(e) => set('rate', e.target.value)} />
           </Field>
         </div>
+        <Field id="cycleLessons" label="بتحاسب كل كام حصة؟" hint="للطالب الخصوصي، أو لو مختلف عن الأكاديمية. فاضي = مثل جهة الدفع.">
+          <input id="cycleLessons" type="number" inputMode="numeric" min={0} value={draft.cycleLessons} onChange={(e) => set('cycleLessons', e.target.value)} />
+        </Field>
+        {student && (
+          <Field id="opening" label="حصص قبل التطبيق في الدفعة الحالية" hint="بتتحسب في المستحقات لحد أول مبلغ تستلمه بعدها.">
+            <input id="opening" type="number" inputMode="numeric" min={0} value={draft.opening} onChange={(e) => set('opening', e.target.value)} />
+          </Field>
+        )}
       </fieldset>
 
       <Field id="notes" label="ملاحظات">

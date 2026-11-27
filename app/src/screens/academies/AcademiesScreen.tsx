@@ -7,10 +7,10 @@ import { rateText, sortAcademies } from '../../domain/academy'
 import { DEFAULT_TIME_ZONE } from '../../domain/countries'
 import {
   DEFAULT_BASE_CURRENCY,
-  DEFAULT_CYCLE_TARGET,
   balances,
-  cycleCount,
   monthDues,
+  payerBatch,
+  type PayerBatch,
   type PayerDues,
   type Payment,
 } from '../../domain/dues'
@@ -130,7 +130,7 @@ export function AcademiesScreen() {
               month={month}
               balance={bal.get(p.key) ?? { earned: 0, received: 0, outstanding: 0 }}
               students={students}
-              cycle={(sid) => cycleCount(sid, p.key, sessions, payments)}
+              batch={payerBatch(p.key, input, payments)}
               payments={payments.filter((x) => x.payerKey === p.key && x.date.startsWith(month))}
             />
           ))}
@@ -177,15 +177,23 @@ function payerShell(key: string, academies: { id: string; name: string; currency
   return undefined
 }
 
+/** «حصة واحدة»، «حصتين»، «٥ حصص»، «١٢ حصة» */
+function lessonsText(n: number): string {
+  if (n === 1) return 'حصة واحدة'
+  if (n === 2) return 'حصتين'
+  return `${toArabicDigits(n)} ${n >= 3 && n <= 10 ? 'حصص' : 'حصة'}`
+}
+
 function lineDetail(l: PayerDues['lines'][number]): string {
   if (l.mode === 'hour') return `${toArabicDigits(Math.round((l.minutes / 60) * 100) / 100)} ساعة`
   if (l.mode === 'month') return 'شهري'
-  return `${toArabicDigits(l.lessons)} ${l.lessons === 1 ? 'حصة' : l.lessons <= 10 ? 'حصص' : 'حصة'}`
+  return lessonsText(l.lessons)
 }
 
-/** Eight dots filling up as the cycle's lessons happen. */
-function CycleDots({ count }: { count: number }) {
-  const target = DEFAULT_CYCLE_TARGET
+/** The batch's lessons: dots filling up to the payer's count, or just the number when there is none. */
+function CycleDots({ count, target }: { count: number; target?: number }) {
+  if (!target) return <span className="cycle-text">{lessonsText(count)}</span>
+  const done = count >= target
   return (
     <span className="cycle">
       <span className="cycle-dots" aria-hidden="true">
@@ -194,9 +202,33 @@ function CycleDots({ count }: { count: number }) {
         ))}
       </span>
       <span className="cycle-text">
-        الدورة: {toArabicDigits(count)} من {toArabicDigits(target)}
+        {toArabicDigits(count)} من {toArabicDigits(target)}
       </span>
+      {done && <span className="tag tag-done">اكتملت الدفعة</span>}
     </span>
+  )
+}
+
+/** Lessons and money since the last payment that closed a batch. */
+function BatchBox({ batch, currency, solo }: { batch: PayerBatch; currency: string; solo: boolean }) {
+  if (!batch.lessons) return null
+  return (
+    <div className="payer-batch" role="group" aria-label="الدفعة الحالية">
+      <p className="batch-head">
+        <b>الدفعة الحالية</b>
+        {batch.start && <span> من {longDate(batch.start)}</span>}: {lessonsText(batch.lessons)} = {money(batch.total, currency)}
+      </p>
+      {(batch.lines.length > 1 || batch.lines.some((l) => l.target)) && (
+        <ul className="batch-lines">
+          {batch.lines.map((l) => (
+            <li key={l.studentId}>
+              {!solo && <span className="bl-name">{l.name}</span>}
+              <CycleDots count={l.lessons} target={l.target} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
@@ -205,14 +237,14 @@ function PayerCard({
   month,
   balance,
   students,
-  cycle,
+  batch,
   payments,
 }: {
   p: PayerDues
   month: string
   balance: Balance
   students: Student[]
-  cycle: (studentId: string) => number
+  batch: PayerBatch
   payments: Payment[]
 }) {
   const { repos, notify } = useData()
@@ -261,10 +293,7 @@ function PayerCard({
               <Avatar name={l.name} size="sm" />
               <span className="pl-body">
                 <span className="pl-name">{l.name}</span>
-                <span className="pl-detail">
-                  <span>{lineDetail(l)}</span>
-                  {p.kind === 'academy' && <CycleDots count={cycle(l.studentId)} />}
-                </span>
+                <span className="pl-detail">{lineDetail(l)}</span>
               </span>
               <span className="pl-amount">{money(l.amount, p.currency)}</span>
             </li>
@@ -273,6 +302,8 @@ function PayerCard({
       ) : (
         <p className="payer-note">لا حصص محسوبة هذا الشهر.</p>
       )}
+
+      <BatchBox batch={batch} currency={p.currency} solo={p.kind === 'private'} />
 
       <div className="payer-balance-box">
         <div className="paid-bar" aria-hidden="true">

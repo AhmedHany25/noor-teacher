@@ -10,6 +10,8 @@ export type Academy = {
   archived: boolean
   /** Remind each student this many hours before a lesson (some academies require it); empty = off. */
   remindHours?: number
+  /** The academy pays after this many lessons; empty = no fixed count (monthly, or whenever). */
+  cycleLessons?: number
   /** Start of the current unpaid batch; empty = the day after the last payment. */
   trackFrom?: string
 }

@@ -10,7 +10,8 @@ export type Payment = {
   amount: number
   currency: string
   date: string // "YYYY-MM-DD"
-  resetsCycle: boolean // this was the cycle's salary: restart the lesson counters
+  /** Closes the current batch (the counters start again). False = a partial payment. */
+  resetsCycle: boolean
   note?: string
 }
 
@@ -43,8 +44,6 @@ export type DuesInput = {
   baseCurrency: string
 }
 
-export const DEFAULT_CYCLE_TARGET = 8
-
 /** Currency for private students until a profile setting exists. */
 export const DEFAULT_BASE_CURRENCY = 'جنيه'
 
@@ -60,19 +59,35 @@ export function payRule(s: Student, academies: Academy[]): { mode: PayMode; rate
 
 const round2 = (x: number) => Math.round(x * 100) / 100
 
-/** Billable regular lessons of one student, grouped by month ("YYYY-MM"). */
-function billableByMonth(studentId: string, sessions: Session[], groups: Group[]) {
-  const byMonth = new Map<string, { lessons: number; minutes: number }>()
+type Billable = { date: string; lessons: number; minutes: number }
+
+/** Billable regular lessons of one student (plus lessons taken before the app), optionally from a date on. */
+function billable(student: Student, sessions: Session[], groups: Group[], from?: string): Billable[] {
+  const out: Billable[] = []
+  const o = student.openingLessons
+  if (o && o.count > 0 && (!from || o.date >= from)) out.push({ date: o.date, lessons: o.count, minutes: o.minutes })
   for (const s of sessions) {
-    if (s.kind !== 'regular') continue
-    const a = s.attendance[studentId]
-    if (!a?.billable) continue
+    if (s.kind !== 'regular' || !s.attendance[student.id]?.billable) continue
+    if (from && s.date < from) continue
     const minutes = s.actualDurationMin ?? groups.find((g) => g.id === s.groupId)?.durationMin ?? 0
-    const m = s.date.slice(0, 7)
-    const cur = byMonth.get(m) ?? { lessons: 0, minutes: 0 }
-    byMonth.set(m, { lessons: cur.lessons + 1, minutes: cur.minutes + minutes })
+    out.push({ date: s.date, lessons: 1, minutes })
   }
-  return byMonth
+  return out
+}
+
+/** Billable lessons grouped by month ("YYYY-MM"). */
+function byMonth(items: Billable[]) {
+  const m = new Map<string, { lessons: number; minutes: number }>()
+  for (const b of items) {
+    const k = b.date.slice(0, 7)
+    const cur = m.get(k) ?? { lessons: 0, minutes: 0 }
+    m.set(k, { lessons: cur.lessons + b.lessons, minutes: cur.minutes + b.minutes })
+  }
+  return m
+}
+
+function billableByMonth(student: Student, sessions: Session[], groups: Group[]) {
+  return byMonth(billable(student, sessions, groups))
 }
 
 function amountFor(mode: PayMode, rate: number, lessons: number, minutes: number): number {
@@ -89,7 +104,7 @@ export function monthDues(input: DuesInput & { month: string }): PayerDues[] {
 
   for (const s of sorted) {
     const { mode, rate, currency } = payRule(s, input.academies)
-    const m = billableByMonth(s.id, input.sessions, input.groups).get(input.month)
+    const m = billableByMonth(s, input.sessions, input.groups).get(input.month)
     if (!m) continue
     const amount = amountFor(mode, rate, m.lessons, m.minutes)
     const key = payerKey(s)
@@ -118,7 +133,7 @@ export function balances(input: DuesInput, payments: Payment[]): Map<string, { e
   for (const s of input.students) {
     const { mode, rate } = payRule(s, input.academies)
     let earned = 0
-    for (const m of billableByMonth(s.id, input.sessions, input.groups).values()) earned += amountFor(mode, rate, m.lessons, m.minutes)
+    for (const m of billableByMonth(s, input.sessions, input.groups).values()) earned += amountFor(mode, rate, m.lessons, m.minutes)
     if (!earned) continue
     const k = payerKey(s)
     const cur = get(k)
@@ -132,18 +147,6 @@ export function balances(input: DuesInput, payments: Payment[]): Map<string, { e
   return out
 }
 
-/** Billable regular lessons of a student after the payer's last cycle-reset payment. */
-export function cycleCount(studentId: string, key: string, sessions: Session[], payments: Payment[]): number {
-  const lastReset = payments
-    .filter((p) => p.payerKey === key && p.resetsCycle)
-    .map((p) => p.date)
-    .sort()
-    .at(-1)
-  return sessions.filter(
-    (s) => s.kind === 'regular' && s.attendance[studentId]?.billable && (!lastReset || s.date > lastReset),
-  ).length
-}
-
 /** Day after a date string. */
 function nextDay(date: string): string {
   const [y, m, d] = date.split('-').map(Number)
@@ -151,18 +154,53 @@ function nextDay(date: string): string {
 }
 
 /**
- * Start of the payer's current (unpaid) batch: the date set by hand, else the day after the
- * last payment received, else undefined (nothing settled yet).
+ * Start of the payer's current (unpaid) batch: the day after the last payment that closed a batch,
+ * or the date set by hand if that is later; undefined when nothing was settled yet.
  */
 export function batchStart(key: string, academies: Academy[], students: Student[], payments: Payment[]): string | undefined {
   const manual = academies.find((a) => a.id === key)?.trackFrom ?? students.find((s) => payerKey(s) === key && !s.academyId)?.trackFrom
-  if (manual) return manual
   const last = payments
-    .filter((p) => p.payerKey === key)
+    .filter((p) => p.payerKey === key && p.resetsCycle !== false)
     .map((p) => p.date)
     .sort()
     .at(-1)
-  return last ? nextDay(last) : undefined
+  const afterPay = last ? nextDay(last) : undefined
+  if (manual && afterPay) return manual > afterPay ? manual : afterPay
+  return manual ?? afterPay
+}
+
+/** How many lessons make one batch for this student: their own setting, else the academy's. */
+export function cycleTarget(s: Student, academies: Academy[]): number | undefined {
+  const n = s.cycleLessons ?? (s.academyId ? academies.find((a) => a.id === s.academyId)?.cycleLessons : undefined)
+  return n && n > 0 ? n : undefined
+}
+
+export type BatchLine = { studentId: string; name: string; lessons: number; amount: number; target?: number }
+export type PayerBatch = { start?: string; lessons: number; total: number; lines: BatchLine[] }
+
+/** The payer's current unpaid batch: lessons and money per student since the batch started. */
+export function payerBatch(key: string, input: DuesInput, payments: Payment[]): PayerBatch {
+  const start = batchStart(key, input.academies, input.students, payments)
+  const lines: BatchLine[] = []
+  const sorted = input.students.filter((s) => payerKey(s) === key).sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+  for (const s of sorted) {
+    const items = billable(s, input.sessions, input.groups, start)
+    if (!items.length) continue
+    const { mode, rate } = payRule(s, input.academies)
+    let amount = 0
+    let lessons = 0
+    for (const m of byMonth(items).values()) {
+      amount += amountFor(mode, rate, m.lessons, m.minutes)
+      lessons += m.lessons
+    }
+    lines.push({ studentId: s.id, name: s.name, lessons, amount: round2(amount), target: cycleTarget(s, input.academies) })
+  }
+  return {
+    start,
+    lessons: lines.reduce((n, l) => n + l.lessons, 0),
+    total: round2(lines.reduce((n, l) => n + l.amount, 0)),
+    lines,
+  }
 }
 
 /** For a group: the earliest batch start among its students' payers (undefined if any payer has none). */

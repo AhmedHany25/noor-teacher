@@ -82,6 +82,14 @@ describe('Groups', () => {
     expect(screen.getByRole('status')).toHaveTextContent('تم حفظ الحلقة')
   })
 
+  it('records lessons already taken in the current batch for each student of a new group', async () => {
+    const { repos } = renderApp('/groups/new?student=s1', { students: [yusuf] }, { now: NOW })
+    await userEvent.click(screen.getByRole('checkbox', { name: 'السبت' }))
+    await userEvent.type(screen.getByLabelText('اتاخد كام حصة في الدفعة الحالية قبل التطبيق؟'), '5')
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ' }))
+    expect(repos.students.all()[0].openingLessons).toEqual({ count: 5, date: '2026-11-27', minutes: 150 })
+  })
+
   it('opens a new group with a student already chosen from the student page link', async () => {
     renderApp('/groups/new?student=s2', { students: [yusuf, omar] }, { now: NOW })
     expect(screen.getByRole('checkbox', { name: 'عمر' })).toBeChecked()

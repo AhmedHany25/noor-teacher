@@ -51,7 +51,7 @@ describe('Dues screen', () => {
     const furqanCard = screen.getByRole('region', { name: 'الفرقان' })
     expect(furqanCard).toHaveTextContent('٨٠ ريال')
     expect(furqanCard).toHaveTextContent('يوسف')
-    expect(furqanCard).toHaveTextContent('٢ حصص')
+    expect(furqanCard).toHaveTextContent('حصتين')
     const saraCard = screen.getByRole('region', { name: 'سارة' })
     expect(saraCard).toHaveTextContent('٦٠٠ جنيه')
     expect(saraCard).toHaveTextContent('خصوصي')
@@ -78,10 +78,28 @@ describe('Dues screen', () => {
     expect(screen.getByRole('region', { name: 'الفرقان' })).toHaveTextContent('المتبقي ليك: ٨٠ ريال')
   })
 
-  it('shows the lesson cycle counter for academy students', () => {
+  it("shows the current batch since the last payment, against the academy's lesson count", () => {
     const paid: Payment = { id: 'p1', payerKey: 'a1', amount: 40, currency: 'ريال', date: '2026-10-31', resetsCycle: true }
-    renderApp('/academies', { ...seed, payments: [paid] }, { now: NOW })
-    expect(screen.getByRole('region', { name: 'الفرقان' })).toHaveTextContent('الدورة: ٢ من ٨')
+    renderApp('/academies', { ...seed, academies: [{ ...furqan, cycleLessons: 2 }], payments: [paid] }, { now: NOW })
+    const batch = within(screen.getByRole('region', { name: 'الفرقان' })).getByRole('group', { name: 'الدفعة الحالية' })
+    expect(batch).toHaveTextContent('من الأحد، ١ نوفمبر')
+    expect(batch).toHaveTextContent('حصتين = ٨٠ ريال')
+    expect(batch).toHaveTextContent('٢ من ٢')
+    expect(batch).toHaveTextContent('اكتملت الدفعة')
+  })
+
+  it('counts lessons taken before the app in the batch', () => {
+    const students = [{ ...yusuf, openingLessons: { count: 3, date: '2026-11-01', minutes: 90 } }, sara]
+    renderApp('/academies', { ...seed, students, payments: [{ id: 'p1', payerKey: 'a1', amount: 40, currency: 'ريال', date: '2026-10-31', resetsCycle: true }] }, { now: NOW })
+    expect(within(screen.getByRole('region', { name: 'الفرقان' })).getByRole('group', { name: 'الدفعة الحالية' })).toHaveTextContent('٥ حصص = ٢٠٠ ريال')
+  })
+
+  it('keeps the batch open after a partial payment', async () => {
+    const { repos } = renderApp('/payments/new?payer=a1', seed, { now: NOW })
+    await userEvent.click(screen.getByRole('checkbox', { name: /مبلغ جزئي/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'حفظ' }))
+    expect(repos.payments.all()[0].resetsCycle).toBe(false)
+    expect(within(screen.getByRole('region', { name: 'الفرقان' })).getByRole('group', { name: 'الدفعة الحالية' })).toHaveTextContent('٣ حصص')
   })
 
   it('records a received payment prefilled with the outstanding amount', async () => {

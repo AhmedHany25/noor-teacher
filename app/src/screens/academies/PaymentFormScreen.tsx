@@ -40,7 +40,7 @@ function PaymentForm({ payers, outstanding }: { payers: Payer[]; outstanding: (k
   const [key, setKey] = useState(initial?.key ?? '')
   const [amount, setAmount] = useState(owed(initial?.key))
   const [date, setDate] = useState(today)
-  const [resetsCycle, setResetsCycle] = useState(initial?.academy ?? false)
+  const [partial, setPartial] = useState(false)
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
   const payer = payers.find((p) => p.key === key)
@@ -48,7 +48,6 @@ function PaymentForm({ payers, outstanding }: { payers: Payer[]; outstanding: (k
   function choose(k: string) {
     setKey(k)
     setAmount(owed(k))
-    setResetsCycle(payers.find((p) => p.key === k)?.academy ?? false)
   }
 
   function save(e: FormEvent) {
@@ -61,7 +60,7 @@ function PaymentForm({ payers, outstanding }: { payers: Payer[]; outstanding: (k
       amount: value,
       currency: payer.currency,
       date,
-      resetsCycle: payer.academy && resetsCycle,
+      resetsCycle: !partial,
       note: note.trim() || undefined,
     })
     notify('تم تسجيل المبلغ')
@@ -102,12 +101,11 @@ function PaymentForm({ payers, outstanding }: { payers: Payer[]; outstanding: (k
         </Field>
       </div>
 
-      {payer?.academy && (
-        <label className="check">
-          <input type="checkbox" checked={resetsCycle} onChange={(e) => setResetsCycle(e.target.checked)} />
-          <span>ده راتب الدورة (عدّاد الحصص يبدأ من جديد)</span>
-        </label>
-      )}
+      <label className="check">
+        <input type="checkbox" checked={partial} onChange={(e) => setPartial(e.target.checked)} />
+        <span>مبلغ جزئي (الدفعة الحالية تفضل مفتوحة)</span>
+      </label>
+      <p className="field-hint">من غير العلامة دي، المبلغ بيقفل الدفعة الحالية والعدّ يبدأ من جديد.</p>
 
       <Field id="note" label="ملاحظة">
         <input id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="اختياري" />

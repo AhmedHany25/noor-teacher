@@ -151,7 +151,7 @@ describe('Missed lessons and the current batch', () => {
       {
         students: [yusuf],
         groups: [group()],
-        payments: [{ id: 'p1', payerKey: 'student:s1', amount: 100, currency: 'جنيه', date: '2026-11-14', resetsCycle: false }],
+        payments: [{ id: 'p1', payerKey: 'student:s1', amount: 100, currency: 'جنيه', date: '2026-11-14', resetsCycle: true }],
       },
       { now: NOW },
     )
