@@ -2,7 +2,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Field } from '../../components/Field'
-import { useData, useGroups, useStudents } from '../../data/data'
+import { useData, useGroups, useSessions, useStudents } from '../../data/data'
 import {
   WEEKDAY_NAMES,
   WEEK_ORDER,
@@ -59,6 +59,12 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
   const [name, setName] = useState(group?.name ?? '')
   const [archived, setArchived] = useState(group?.archived ?? false)
   const [taken, setTaken] = useState('')
+  const [askTaken, setAskTaken] = useState(false)
+  const { items: sessions } = useSessions()
+  // Only students with nothing recorded yet can have lessons from before the app.
+  const fresh = studentIds.filter(
+    (sid) => !students.find((s) => s.id === sid)?.openingLessons && !sessions.some((x) => x.attendance[sid]),
+  )
   const [errors, setErrors] = useState<GroupErrors>({})
 
   // Students to choose from: active ones, plus anyone already in this group.
@@ -103,7 +109,7 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
       const count = Math.floor(Number(taken))
       if (count > 0) {
         const date = startDate < today ? startDate : today
-        for (const sid of studentIds) repos.students.patch(sid, { openingLessons: { count, date, minutes: count * durationMin } })
+        for (const sid of fresh) repos.students.patch(sid, { openingLessons: { count, date, minutes: count * durationMin } })
       }
     }
     notify('تم حفظ الحلقة')
@@ -169,7 +175,14 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
         </Field>
       </div>
 
-      {!group && (
+      {!group && fresh.length > 0 && !askTaken && (
+        <p className="form-link">
+          <button type="button" className="link-btn" onClick={() => setAskTaken(true)}>
+            الطالب واخد حصص قبل كده ولسه ماتحاسبتش؟
+          </button>
+        </p>
+      )}
+      {!group && fresh.length > 0 && askTaken && (
         <Field
           id="taken"
           label="اتاخد كام حصة في الدفعة الحالية قبل التطبيق؟"

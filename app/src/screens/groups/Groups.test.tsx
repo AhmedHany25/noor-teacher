@@ -85,9 +85,16 @@ describe('Groups', () => {
   it('records lessons already taken in the current batch for each student of a new group', async () => {
     const { repos } = renderApp('/groups/new?student=s1', { students: [yusuf] }, { now: NOW })
     await userEvent.click(screen.getByRole('checkbox', { name: 'السبت' }))
+    await userEvent.click(screen.getByRole('button', { name: 'الطالب واخد حصص قبل كده ولسه ماتحاسبتش؟' }))
     await userEvent.type(screen.getByLabelText('اتاخد كام حصة في الدفعة الحالية قبل التطبيق؟'), '5')
     await userEvent.click(screen.getByRole('button', { name: 'حفظ' }))
     expect(repos.students.all()[0].openingLessons).toEqual({ count: 5, date: '2026-11-27', minutes: 150 })
+  })
+
+  it('does not ask about earlier lessons for a student who already has lessons recorded', () => {
+    const recorded = { id: 'x', groupId: 'g0', date: '2026-11-20', time: '17:00', kind: 'regular' as const, attendance: { s1: { status: 'p' as const, billable: true } }, updatedAt: 1 }
+    renderApp('/groups/new?student=s1', { students: [yusuf], sessions: [recorded] }, { now: NOW })
+    expect(screen.queryByRole('button', { name: /واخد حصص قبل كده/ })).not.toBeInTheDocument()
   })
 
   it('opens a new group with a student already chosen from the student page link', async () => {
