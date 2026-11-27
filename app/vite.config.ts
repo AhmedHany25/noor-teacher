@@ -28,6 +28,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         navigateFallback: '/index.html',
+        // Firebase reserves /__/ (the Google sign-in handler lives at /__/auth/handler).
+        // Those pages must come from the network, never from the cached app shell.
+        navigateFallbackDenylist: [/^\/__\//],
       },
     }),
   ],

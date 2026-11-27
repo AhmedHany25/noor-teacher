@@ -24,3 +24,22 @@ export function formatGregorian(date: Date): string {
 export function formatHijri(date: Date): string {
   return toArabicDigits(hijri.format(date))
 }
+
+/** Western digits from any digits the user typed (Arabic-Indic included); undefined if empty. */
+export function parseNumber(v: string): number | undefined {
+  const t = v.trim().replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace('٫', '.')
+  return t ? Number(t) : undefined
+}
+
+const longFmt = new Intl.DateTimeFormat('ar-EG', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+
+function utcDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d))
+}
+
+
+/** "2026-11-27" → "الجمعة، ٢٧ نوفمبر" (time zone safe). */
+export function longDate(iso: string): string {
+  return toArabicDigits(longFmt.format(utcDate(iso)))
+}
