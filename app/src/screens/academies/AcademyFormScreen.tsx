@@ -1,3 +1,4 @@
+import { PageHeader } from '../../components/PageHeader'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Field } from '../../components/Field'
@@ -56,7 +57,7 @@ function AcademyForm({ academy, others }: { academy?: Academy; others: Academy[]
 
   return (
     <form className="form" onSubmit={save} noValidate>
-      <h1 className="screen-title">{academy ? academy.name : 'أكاديمية جديدة'}</h1>
+      <PageHeader title={academy ? academy.name : 'أكاديمية جديدة'} />
 
       <Field id="name" label="الاسم" error={errors.name}>
         <input id="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" />

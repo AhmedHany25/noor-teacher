@@ -1,6 +1,7 @@
 import type { Academy, AcademyInput } from '../domain/academy'
 import type { Session, SessionInput } from '../domain/attendance'
 import type { Payment, PaymentInput } from '../domain/dues'
+import type { BackupData } from '../domain/importData'
 import type { Group, GroupInput } from '../domain/schedule'
 import type { Student, StudentInput } from '../domain/student'
 
@@ -18,6 +19,8 @@ export type CollectionRepo<T extends { id: string }, I> = {
   /** Creates or fully replaces the document with this id. */
   put: (id: string, input: I) => void
   remove: (id: string) => void
+  /** Changes only the given fields; a field set to `undefined` is removed. */
+  patch: (id: string, fields: Partial<Omit<T, 'id'>>) => void
 }
 
 export type Repos = {
@@ -26,4 +29,8 @@ export type Repos = {
   groups: CollectionRepo<Group, GroupInput>
   sessions: CollectionRepo<Session, SessionInput>
   payments: CollectionRepo<Payment, PaymentInput>
+  /** Writes a whole backup (keeping ids, so importing twice does not duplicate). Returns at once. */
+  importAll: (data: BackupData) => void
+  /** Old-site data kept for later versions (plans, progress, marks). */
+  loadLegacy: () => Promise<Record<string, unknown>>
 }

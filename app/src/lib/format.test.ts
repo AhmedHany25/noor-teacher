@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDayName, formatGregorian, formatHijri, toArabicDigits } from './format'
+import { formatDayName, formatGregorian, formatHijri, toArabicDigits, untilText } from './format'
 
 // 2026-11-27 is a Friday. Built at local noon so time zones cannot shift the day.
 const friday = new Date(2026, 10, 27, 12, 0, 0)
@@ -39,5 +39,17 @@ describe('formatHijri', () => {
     expect(s).toContain('هـ')
     expect(s).not.toContain('نوفمبر')
     expect(s).not.toMatch(/[0-9]/)
+  })
+})
+
+describe('untilText', () => {
+  it('reads naturally in Arabic', () => {
+    expect(untilText(0)).toBe('دلوقتي')
+    expect(untilText(45)).toBe('٤٥ دقيقة')
+    expect(untilText(5)).toBe('٥ دقائق')
+    expect(untilText(60)).toBe('ساعة')
+    expect(untilText(70)).toBe('ساعة و١٠ دقائق')
+    expect(untilText(125)).toBe('ساعتين و٥ دقائق')
+    expect(untilText(180)).toBe('٣ ساعات')
   })
 })

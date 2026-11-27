@@ -43,3 +43,14 @@ function utcDate(iso: string): Date {
 export function longDate(iso: string): string {
   return toArabicDigits(longFmt.format(utcDate(iso)))
 }
+
+/** Minutes until something, in friendly Arabic: «دلوقتي», «٤٥ دقيقة», «ساعة و١٠ دقائق», «٣ ساعات». */
+export function untilText(minutes: number): string {
+  if (minutes < 1) return 'دلوقتي'
+  const h = Math.floor(minutes / 60)
+  const m = Math.round(minutes % 60)
+  const mins = (n: number) => `${toArabicDigits(n)} ${n >= 3 && n <= 10 ? 'دقائق' : 'دقيقة'}`
+  if (h === 0) return mins(m)
+  const hours = h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : `${toArabicDigits(h)} ${h <= 10 ? 'ساعات' : 'ساعة'}`
+  return m ? `${hours} و${mins(m)}` : hours
+}

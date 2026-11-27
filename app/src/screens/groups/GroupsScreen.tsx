@@ -1,4 +1,6 @@
 import { Link } from 'react-router'
+import { Avatar } from '../../components/Avatar'
+import { PageHeader } from '../../components/PageHeader'
 import { useGroups, useStudents } from '../../data/data'
 import { groupTitle, scheduleText } from '../../domain/schedule'
 import { toArabicDigits } from '../../lib/format'
@@ -16,14 +18,17 @@ export function GroupsScreen() {
 
   return (
     <>
-      <div className="screen-head">
-        <h1 className="screen-title">الحلقات</h1>
-        {students.length > 0 && (
-          <Link to="/groups/new" className="btn btn-primary">
-            إضافة حلقة
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title="الحلقات"
+        subtitle={active.length ? `${toArabicDigits(active.length)} حلقة` : undefined}
+        action={
+          students.length > 0 && (
+            <Link to="/groups/new" className="btn btn-gold">
+              إضافة حلقة
+            </Link>
+          )
+        }
+      />
 
       {students.length === 0 ? (
         <section className="empty">
@@ -40,7 +45,8 @@ export function GroupsScreen() {
       ) : (
         <ul className="rows" aria-label="الحلقات">
           {active.map(({ g, title }) => (
-            <li key={g.id} className="row">
+            <li key={g.id} className="row row-card">
+              <Avatar name={students.find((s) => s.id === g.studentIds[0])?.name ?? title} />
               <Link to={`/groups/${g.id}`} className="row-main">
                 <span className="row-title">{title}</span>
                 <span className="row-meta">

@@ -109,3 +109,10 @@ describe('unrecordedLessons', () => {
     expect(list.map((o) => o.date)).toEqual([FRI])
   })
 })
+
+describe('unrecordedLessons with a batch start', () => {
+  it('leaves out lessons before the start of the current batch', () => {
+    const list = unrecordedLessons([group()], [], FRI, '18:00', 60, () => '2026-11-15')
+    expect(list.map((o) => o.date)).toEqual([FRI, '2026-11-20'])
+  })
+})

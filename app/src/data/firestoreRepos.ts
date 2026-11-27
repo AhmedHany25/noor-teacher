@@ -3,9 +3,11 @@ import {
   deleteDoc,
   deleteField,
   doc,
+  getDocs,
   onSnapshot,
   setDoc,
   updateDoc,
+  writeBatch,
   type DocumentData,
   type Firestore,
 } from 'firebase/firestore'
@@ -17,6 +19,10 @@ const forCreate = (input: object): DocumentData =>
 
 const forUpdate = (input: object): DocumentData =>
   Object.fromEntries(Object.entries(input).map(([k, v]) => [k, v === undefined ? deleteField() : v]))
+
+/** Firestore documents are limited to 1 MiB; leave room for field names. */
+const MAX_LEGACY_CHARS = 900_000
+const BATCH_SIZE = 400
 
 function repo<T extends { id: string }, I extends object>(
   db: Firestore,
@@ -42,16 +48,42 @@ function repo<T extends { id: string }, I extends object>(
     remove: (id) => {
       deleteDoc(doc(col, id)).catch(onWriteError)
     },
+    patch: (id, fields) => {
+      updateDoc(doc(col, id), forUpdate(fields)).catch(onWriteError)
+    },
   }
 }
 
 export function firestoreRepos(db: Firestore, uid: string, onWriteError: (e: Error) => void): Repos {
-  const base = ['users', uid]
+  const base = ['users', uid] as const
+  const legacy = collection(db, ...base, 'legacy')
   return {
     students: repo(db, [...base, 'students'], onWriteError, () => ({ createdAt: Date.now() })),
     academies: repo(db, [...base, 'academies'], onWriteError),
     groups: repo(db, [...base, 'groups'], onWriteError),
     sessions: repo(db, [...base, 'sessions'], onWriteError),
     payments: repo(db, [...base, 'payments'], onWriteError),
+
+    importAll: (data) => {
+      const writes: [string, string, DocumentData][] = []
+      for (const name of ['students', 'academies', 'groups', 'sessions', 'payments'] as const) {
+        for (const { id, ...rest } of data[name] as { id: string }[]) writes.push([name, id, forCreate(rest)])
+      }
+      for (const [key, value] of Object.entries(data.legacy)) {
+        const json = JSON.stringify(value)
+        if (json.length <= MAX_LEGACY_CHARS) writes.push(['legacy', key, { json }])
+        else console.warn(`legacy/${key} is too large to store (${json.length} chars); skipped`)
+      }
+      for (let i = 0; i < writes.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db)
+        for (const [name, id, value] of writes.slice(i, i + BATCH_SIZE)) batch.set(doc(db, ...base, name, id), value)
+        batch.commit().catch(onWriteError)
+      }
+    },
+
+    loadLegacy: async () => {
+      const snap = await getDocs(legacy)
+      return Object.fromEntries(snap.docs.map((d) => [d.id, JSON.parse((d.data() as { json: string }).json)]))
+    },
   }
 }

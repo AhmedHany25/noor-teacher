@@ -139,6 +139,31 @@ describe('Missed lessons', () => {
 
   it('says all caught up when nothing is missing', () => {
     renderApp('/review', { students: [yusuf], groups: [group({ startDate: FRI, slots: [{ weekday: 5, time: '18:00' }] })] }, { now: NOW })
-    expect(screen.getByText('كل الحصص اللي فاتت متسجلة.')).toBeInTheDocument()
+    expect(screen.getByText('كل حصص الدفعة الحالية متسجلة.')).toBeInTheDocument()
+  })
+})
+
+describe('Missed lessons and the current batch', () => {
+  it('ignores lessons before the last payment from that payer', () => {
+    renderApp(
+      '/review',
+      {
+        students: [yusuf],
+        groups: [group()],
+        payments: [{ id: 'p1', payerKey: 'student:s1', amount: 100, currency: 'جنيه', date: '2026-11-14', resetsCycle: false }],
+      },
+      { now: NOW },
+    )
+    const items = within(screen.getByRole('region', { name: 'حصص لم تُسجَّل' })).getAllByRole('listitem')
+    expect(items).toHaveLength(2) // Nov 20 and 27 only
+  })
+
+  it('lets the teacher set where a batch starts', async () => {
+    const { repos } = renderApp('/review', { students: [yusuf], groups: [group()] }, { now: NOW })
+    const input = screen.getByLabelText('بداية دفعة يوسف')
+    await userEvent.clear(input)
+    await userEvent.type(input, '2026-11-25')
+    expect(repos.students.all()[0].trackFrom).toBe('2026-11-25')
+    expect(within(screen.getByRole('region', { name: 'حصص لم تُسجَّل' })).getAllByRole('listitem')).toHaveLength(1)
   })
 })

@@ -1,0 +1,475 @@
+/* ==========================================================================
+   Design v2: emerald band with star lattice and gold rule, hero card, cards.
+   Loaded after app.css and overrides its plainer v1 rules.
+   ========================================================================== */
+:root {
+  --band: #0a6b54;
+  --band-deep: #075242;
+  --gold-bright: #e9b949;
+  --gold-soft: #fbf1d9;
+  --gold-ink: #7a5410;
+  --card-radius: 16px;
+  --shadow-card: 0 1px 2px rgba(7, 82, 66, 0.06), 0 6px 18px rgba(7, 82, 66, 0.07);
+  --pad-x: 1rem;
+  --pad-top: 1.25rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --band: #0b4d3d;
+    --band-deep: #0d3b30;
+    --gold-soft: #3a2f12;
+    --gold-ink: #f0c96a;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+}
+
+:root[data-theme="dark"] {
+  --band: #0b4d3d;
+  --band-deep: #0d3b30;
+  --gold-soft: #3a2f12;
+  --gold-ink: #f0c96a;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.shell-main {
+  padding: var(--pad-top) var(--pad-x) calc(var(--tabbar-height) + 1.5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 900px) {
+  :root {
+    --pad-x: 2rem;
+    --pad-top: 1.5rem;
+  }
+
+  .shell-main {
+    padding-bottom: 2.5rem;
+  }
+}
+
+/* ----- Header band ----- */
+.band {
+  position: relative;
+  overflow: hidden;
+  margin: calc(-1 * var(--pad-top)) calc(-1 * var(--pad-x)) 1.25rem;
+  padding: calc(var(--pad-top) + 0.25rem) var(--pad-x) 1.5rem;
+  background: var(--band);
+  color: #fff;
+}
+
+.band::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, var(--gold-bright) 0 12px, var(--gold) 12px 24px);
+}
+
+.band-pattern {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--gold-bright);
+  opacity: 0.16;
+}
+
+.band-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.band-text {
+  min-width: 0;
+}
+
+.band-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.band-title-big {
+  font-family: var(--font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.band-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+  margin-top: 0.3rem;
+  font-size: var(--step--1);
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.band-gold {
+  color: #f3d17c;
+}
+
+.band-action {
+  flex: none;
+}
+
+@media (min-width: 900px) {
+  .band {
+    margin: 0 0 1.5rem;
+    padding: 1.5rem 1.75rem 1.75rem;
+    border-radius: 20px;
+  }
+}
+
+.btn-gold {
+  background: var(--gold-bright);
+  color: #2b1d00;
+}
+
+.btn-gold:hover {
+  background: #f3d17c;
+}
+
+/* ----- Cards ----- */
+.card,
+.empty.card {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* ----- Hero: next lesson ----- */
+.hero {
+  display: block;
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.25rem 1.2rem;
+  border-radius: 20px;
+  background: var(--band-deep);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: var(--shadow-card);
+}
+
+.hero-label {
+  font-size: var(--step--1);
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.hero-big {
+  font-size: 2.3rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.hero-who {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.hero-who b {
+  display: block;
+  font-size: 1.05rem;
+}
+
+.hero-who span {
+  font-size: var(--step--1);
+  opacity: 0.85;
+}
+
+.hero-done {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.hero-done .hero-big {
+  font-size: 1.5rem;
+  color: var(--emerald);
+}
+
+/* ----- Stats ----- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.stat b {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.stat span {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.stat-good b {
+  color: var(--emerald);
+}
+
+.stat-warn {
+  border-color: color-mix(in srgb, var(--gold) 50%, transparent);
+  background: var(--gold-soft);
+}
+
+.stat-warn b,
+.stat-warn span {
+  color: var(--gold-ink);
+}
+
+/* ----- Avatars ----- */
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.avatar-sm {
+  width: 2rem;
+  height: 2rem;
+  font-size: 0.85rem;
+}
+
+.avatar-md {
+  width: 2.6rem;
+  height: 2.6rem;
+  font-size: 1rem;
+}
+
+.avatar-lg {
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.15rem;
+}
+
+.tint-0 { background: #d9efe6; color: #075242; }
+.tint-1 { background: #fbf1d9; color: #7a5410; }
+.tint-2 { background: #f6e2e7; color: #72243e; }
+.tint-3 { background: #e3ecfa; color: #0c447c; }
+.tint-4 { background: #eeeafd; color: #3c3489; }
+.tint-5 { background: #fae9e2; color: #712b13; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tint-0 { background: #134a3c; color: #9fe1cb; }
+
+  :root:not([data-theme="light"]) .tint-1 { background: #4a3a12; color: #fac775; }
+
+  :root:not([data-theme="light"]) .tint-2 { background: #4b1528; color: #f4c0d1; }
+
+  :root:not([data-theme="light"]) .tint-3 { background: #0c3358; color: #b5d4f4; }
+
+  :root:not([data-theme="light"]) .tint-4 { background: #2e2870; color: #cecbf6; }
+
+  :root:not([data-theme="light"]) .tint-5 { background: #4a1b0c; color: #f5c4b3; }
+}
+
+:root[data-theme="dark"] .tint-0 { background: #134a3c; color: #9fe1cb; }
+
+:root[data-theme="dark"] .tint-1 { background: #4a3a12; color: #fac775; }
+
+:root[data-theme="dark"] .tint-2 { background: #4b1528; color: #f4c0d1; }
+
+:root[data-theme="dark"] .tint-3 { background: #0c3358; color: #b5d4f4; }
+
+:root[data-theme="dark"] .tint-4 { background: #2e2870; color: #cecbf6; }
+
+:root[data-theme="dark"] .tint-5 { background: #4a1b0c; color: #f5c4b3; }
+
+/* ----- Lesson cards ----- */
+.lessons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.lesson {
+  display: block;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.lesson.is-next {
+  border: 2px solid var(--gold);
+}
+
+.lesson-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lesson-main {
+  flex: 1;
+}
+
+.lesson .lesson-time {
+  display: inline-block;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold-ink);
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.lesson.is-next .lesson-time {
+  background: var(--gold);
+  color: #2b1d00;
+}
+
+.lesson .lesson-tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.lesson .att {
+  margin-top: 0.75rem;
+}
+
+.att-link {
+  width: 100%;
+}
+
+.lesson.is-cancelled {
+  opacity: 0.7;
+  box-shadow: none;
+}
+
+/* ----- Lists as cards ----- */
+.rows,
+.stu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.row,
+.stu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ----- Status tabs as a segmented pill ----- */
+.tabs {
+  gap: 0.25rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.tab {
+  margin: 0;
+  padding: 0.4rem 0.95rem;
+  border: 0;
+  border-radius: 999px;
+}
+
+.tab[aria-selected='true'] {
+  background: var(--emerald);
+  color: var(--paper);
+}
+
+.tab[aria-selected='true'] .tab-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: inherit;
+}
+
+.search {
+  margin: 0.25rem 0 0.9rem;
+  padding-inline: 1.1rem;
+  border-radius: 999px;
+}
+
+/* ----- Dues cards ----- */
+.payer {
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-card);
+}
+
+/* ----- Navigation ----- */
+.nav {
+  box-shadow: 0 -4px 16px rgba(7, 82, 66, 0.06);
+}
+
+.nav-link svg {
+  box-sizing: content-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.2rem 0.9rem;
+  border-radius: 999px;
+}
+
+.nav-link.active svg {
+  background: var(--emerald-soft);
+}
+
+@media (min-width: 900px) {
+  .nav {
+    background: var(--surface);
+    box-shadow: none;
+  }
+
+  .nav-link svg {
+    padding: 0;
+  }
+
+  .nav-link.active svg {
+    background: none;
+  }
+
+  .nav-link.active {
+    background: var(--emerald);
+    color: var(--paper);
+  }
+}

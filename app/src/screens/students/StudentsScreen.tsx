@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { Avatar } from '../../components/Avatar'
+import { PageHeader } from '../../components/PageHeader'
 import { useAcademies, useStudents } from '../../data/data'
 import { DEFAULT_TIME_ZONE, countryOf } from '../../domain/countries'
 import { STATUS_LABELS, filterStudents, whatsappNumber, type StudentStatus } from '../../domain/student'
@@ -24,12 +26,15 @@ export function StudentsScreen() {
 
   return (
     <>
-      <div className="screen-head">
-        <h1 className="screen-title">الطلاب</h1>
-        <Link to="/students/new" className="btn btn-primary">
-          إضافة طالب
-        </Link>
-      </div>
+      <PageHeader
+        title="الطلاب"
+        subtitle={loading ? undefined : `${toArabicDigits(counts.active)} طالب نشط`}
+        action={
+          <Link to="/students/new" className="btn btn-gold">
+            إضافة طالب
+          </Link>
+        }
+      />
 
       {loading ? null : students.length === 0 ? (
         <section className="empty">
@@ -73,6 +78,7 @@ export function StudentsScreen() {
                 const country = s.timeZone ? countryOf(s.timeZone)?.name : undefined
                 return (
                   <li key={s.id} className="stu-row">
+                    <Avatar name={s.name} />
                     <Link to={`/students/${s.id}`} className="stu-main">
                       <span className="stu-name">{s.name}</span>
                       <span className="stu-meta">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Academy } from './academy'
 import type { Session } from './attendance'
-import { balances, cycleCount, monthDues, payerKey, type Payment } from './dues'
+import { balances, batchStart, cycleCount, groupBatchStart, monthDues, payerKey, type Payment } from './dues'
 import type { Group } from './schedule'
 import type { Student } from './student'
 
@@ -152,5 +152,28 @@ describe('balances and cycle', () => {
   it('counts billable regular lessons since the last cycle reset for the payer', () => {
     expect(cycleCount('s1', 'a1', input.sessions, [paid])).toBe(1)
     expect(cycleCount('s1', 'a1', input.sessions, [])).toBe(3)
+  })
+})
+
+describe('batch start', () => {
+  const pay = (key: string, date: string): Payment => ({ id: key + date, payerKey: key, amount: 1, currency: 'ريال', date, resetsCycle: true })
+
+  it('starts the day after the last payment, or at a date set by hand', () => {
+    expect(batchStart('a1', [furqan], [], [pay('a1', '2026-10-31'), pay('a1', '2026-09-30')])).toBe('2026-11-01')
+    expect(batchStart('a1', [{ ...furqan, trackFrom: '2026-11-15' }], [], [pay('a1', '2026-10-31')])).toBe('2026-11-15')
+    expect(batchStart('a1', [furqan], [], [])).toBeUndefined()
+  })
+
+  it('uses a private student own start date', () => {
+    const p = stu('p1', { academyId: null, trackFrom: '2026-11-10' })
+    expect(batchStart(payerKey(p), [], [p], [])).toBe('2026-11-10')
+  })
+
+  it('gives a group the earliest start of its students, or none if one has no start', () => {
+    const a = stu('s1')
+    const b = stu('s2', { academyId: null, trackFrom: '2026-10-20' })
+    const payments = [pay('a1', '2026-10-31')]
+    expect(groupBatchStart(group('g', ['s1', 's2']), [a, b], [furqan], payments)).toBe('2026-10-20')
+    expect(groupBatchStart(group('g', ['s1', 's3']), [a, stu('s3', { academyId: null })], [furqan], payments)).toBeUndefined()
   })
 })

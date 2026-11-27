@@ -1,6 +1,7 @@
 import type { Academy } from '../domain/academy'
 import type { Session } from '../domain/attendance'
 import type { Payment } from '../domain/dues'
+import type { BackupData } from '../domain/importData'
 import type { Group } from '../domain/schedule'
 import type { Student } from '../domain/student'
 import type { CollectionRepo, Repos } from './repos'
@@ -50,6 +51,15 @@ function memRepo<T extends { id: string }, I extends object>(
       items = items.filter((x) => x.id !== id)
       emit()
     },
+    patch: (id, fields) => {
+      items = items.map((x) => {
+        if (x.id !== id) return x
+        const next: Record<string, unknown> = { ...x, ...fields }
+        for (const [k, v] of Object.entries(fields)) if (v === undefined) delete next[k]
+        return next as T
+      })
+      emit()
+    },
   }
 }
 
@@ -57,11 +67,23 @@ function memRepo<T extends { id: string }, I extends object>(
 export function memoryRepos(
   seed: { students?: Student[]; academies?: Academy[]; groups?: Group[]; sessions?: Session[]; payments?: Payment[] } = {},
 ) {
-  return {
+  let legacy: Record<string, unknown> = {}
+  const repos = {
     students: memRepo<Student, Omit<Student, 'id' | 'createdAt'>>('s', seed.students ?? [], () => ({ createdAt: 1 })),
     academies: memRepo<Academy, Omit<Academy, 'id'>>('a', seed.academies ?? []),
     groups: memRepo<Group, Omit<Group, 'id'>>('g', seed.groups ?? []),
     sessions: memRepo<Session, Omit<Session, 'id'>>('x', seed.sessions ?? []),
     payments: memRepo<Payment, Omit<Payment, 'id'>>('p', seed.payments ?? []),
+  }
+  return {
+    ...repos,
+    importAll: (data: BackupData) => {
+      for (const name of ['students', 'academies', 'groups', 'sessions', 'payments'] as const) {
+        const r = repos[name] as unknown as CollectionRepo<{ id: string }, object>
+        for (const { id, ...rest } of data[name] as { id: string }[]) r.put(id, rest)
+      }
+      legacy = { ...legacy, ...data.legacy }
+    },
+    loadLegacy: async () => legacy,
   } satisfies Repos
 }

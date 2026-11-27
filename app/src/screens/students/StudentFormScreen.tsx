@@ -1,3 +1,4 @@
+import { PageHeader } from '../../components/PageHeader'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Field } from '../../components/Field'
@@ -108,7 +109,7 @@ function StudentForm({ student }: { student?: Student }) {
 
   return (
     <form className="form" onSubmit={save} noValidate>
-      <h1 className="screen-title">{student ? student.name : 'طالب جديد'}</h1>
+      <PageHeader title={student ? student.name : 'طالب جديد'} />
 
       <Field id="name" label="الاسم" error={errors.name}>
         <input id="name" value={draft.name} onChange={(e) => set('name', e.target.value)} autoComplete="off" />

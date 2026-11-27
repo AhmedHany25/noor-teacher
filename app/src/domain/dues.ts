@@ -143,3 +143,39 @@ export function cycleCount(studentId: string, key: string, sessions: Session[], 
     (s) => s.kind === 'regular' && s.attendance[studentId]?.billable && (!lastReset || s.date > lastReset),
   ).length
 }
+
+/** Day after a date string. */
+function nextDay(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+}
+
+/**
+ * Start of the payer's current (unpaid) batch: the date set by hand, else the day after the
+ * last payment received, else undefined (nothing settled yet).
+ */
+export function batchStart(key: string, academies: Academy[], students: Student[], payments: Payment[]): string | undefined {
+  const manual = academies.find((a) => a.id === key)?.trackFrom ?? students.find((s) => payerKey(s) === key && !s.academyId)?.trackFrom
+  if (manual) return manual
+  const last = payments
+    .filter((p) => p.payerKey === key)
+    .map((p) => p.date)
+    .sort()
+    .at(-1)
+  return last ? nextDay(last) : undefined
+}
+
+/** For a group: the earliest batch start among its students' payers (undefined if any payer has none). */
+export function groupBatchStart(
+  group: Group,
+  students: Student[],
+  academies: Academy[],
+  payments: Payment[],
+): string | undefined {
+  const starts = group.studentIds.map((id) => {
+    const s = students.find((x) => x.id === id)
+    return s ? batchStart(payerKey(s), academies, students, payments) : undefined
+  })
+  if (starts.length === 0 || starts.some((s) => !s)) return undefined
+  return (starts as string[]).sort()[0]
+}

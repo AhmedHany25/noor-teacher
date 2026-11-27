@@ -16,10 +16,12 @@ export type Student = {
   notes?: string
   status: StudentStatus
   createdAt: number
+  /** Private students only: start of the current unpaid batch (see Academy.trackFrom). */
+  trackFrom?: string
 }
 
 /** The editable part of a student (what the form produces). */
-export type StudentInput = Omit<Student, 'id' | 'createdAt'>
+export type StudentInput = Omit<Student, 'id' | 'createdAt' | 'trackFrom'>
 
 export const STATUS_LABELS: Record<StudentStatus, string> = {
   active: 'نشط',

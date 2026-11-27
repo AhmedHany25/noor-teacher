@@ -10,6 +10,7 @@ import {
 } from '../domain/attendance'
 import { time12, type Group, type Occurrence } from '../domain/schedule'
 import { toArabicDigits } from '../lib/format'
+import { Avatar } from './Avatar'
 
 const KIND_LABELS = { regular: '', makeup: 'تعويض', trial: 'تجريبية' } as const
 const STATUSES: AttendanceStatus[] = ['p', 'a', 'e']
@@ -19,12 +20,14 @@ type Props = {
   o: Occurrence
   group: Group
   title: string
+  /** Name used for the avatar (the first student). */
+  avatarName?: string
   session?: Session
   isNext?: boolean
   localTimes?: string[]
 }
 
-export function LessonRow({ o, group, title, session, isNext, localTimes = [] }: Props) {
+export function LessonRow({ o, group, title, avatarName, session, isNext, localTimes = [] }: Props) {
   const { repos } = useData()
   const status = lessonStatus(session)
   const href = `/lessons/${o.groupId}/${o.date}`
@@ -38,22 +41,28 @@ export function LessonRow({ o, group, title, session, isNext, localTimes = [] }:
 
   return (
     <li className={classes}>
-      <span className="lesson-time">{time12(o.time)}</span>
-      <Link to={href} className="lesson-main">
-        <span className="lesson-title">{title}</span>
-        <span className="lesson-meta">
-          <span>{toArabicDigits(o.durationMin)} دقيقة</span>
-          {localTimes.map((t) => (
-            <span key={t}>{t}</span>
-          ))}
+      <div className="lesson-top">
+        <Avatar name={avatarName ?? title} />
+        <Link to={href} className="lesson-main">
+          <span className="lesson-title">{title}</span>
+          <span className="lesson-meta">
+            <span>{toArabicDigits(o.durationMin)} دقيقة</span>
+            {localTimes.map((t) => (
+              <span key={t}>{t}</span>
+            ))}
+          </span>
+        </Link>
+        <span className="lesson-time">{time12(o.time)}</span>
+      </div>
+
+      {(isNext || KIND_LABELS[o.kind] || o.cancelledBy || o.movedFrom) && (
+        <span className="lesson-tags">
+          {isNext && <span className="tag tag-next">الحصة الجاية</span>}
+          {KIND_LABELS[o.kind] && <span className="tag">{KIND_LABELS[o.kind]}</span>}
+          {o.cancelledBy && <span className="tag tag-muted">ملغاة</span>}
+          {o.movedFrom && <span className="tag">منقولة</span>}
         </span>
-      </Link>
-      <span className="lesson-tags">
-        {isNext && <span className="tag tag-next">الحصة الجاية</span>}
-        {KIND_LABELS[o.kind] && <span className="tag">{KIND_LABELS[o.kind]}</span>}
-        {o.cancelledBy && <span className="tag tag-muted">ملغاة</span>}
-        {o.movedFrom && <span className="tag">منقولة</span>}
-      </span>
+      )}
 
       {!o.cancelledBy &&
         (group.studentIds.length === 1 ? (
@@ -73,7 +82,7 @@ export function LessonRow({ o, group, title, session, isNext, localTimes = [] }:
           </span>
         ) : (
           <span className="att">
-            <Link to={href} className="att-link">
+            <Link to={href} className="btn btn-quiet att-link">
               {status ? 'تعديل الحضور' : 'سجّل الحضور'}
             </Link>
           </span>

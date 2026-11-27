@@ -28,7 +28,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --emerald: #3fbf95;
     --emerald-strong: #6fd6b2;
     --emerald-soft: #173a31;
@@ -40,6 +40,19 @@
     --line: #23392f;
     color-scheme: dark;
   }
+}
+
+:root[data-theme="dark"] {
+  --emerald: #3fbf95;
+  --emerald-strong: #6fd6b2;
+  --emerald-soft: #173a31;
+  --gold: #e2b65a;
+  --ink: #e6efea;
+  --ink-muted: #9db3ab;
+  --paper: #0d1a17;
+  --surface: #13241f;
+  --line: #23392f;
+  color-scheme: dark;
 }
 
 /* ===== Base ===== */
@@ -348,9 +361,13 @@ a {
 }
 
 @media (prefers-color-scheme: dark) {
-  .signin-error {
+  :root:not([data-theme="light"]) .signin-error {
     color: #f2b8b5;
   }
+}
+
+:root[data-theme="dark"] .signin-error {
+  color: #f2b8b5;
 }
 
 /* ===== Account ===== */
@@ -596,14 +613,23 @@ a.btn {
 }
 
 @media (prefers-color-scheme: dark) {
-  .field-error {
+  :root:not([data-theme="light"]) .field-error {
     color: #f2b8b5;
   }
 
-  .has-error input,
-  .has-error select {
+  :root:not([data-theme="light"]) .has-error input,
+  :root:not([data-theme="light"]) .has-error select {
     border-color: #f2b8b5;
   }
+}
+
+:root[data-theme="dark"] .field-error {
+  color: #f2b8b5;
+}
+
+:root[data-theme="dark"] .has-error input,
+:root[data-theme="dark"] .has-error select {
+  border-color: #f2b8b5;
 }
 
 .segmented {
@@ -1338,4 +1364,81 @@ body {
 .section-head {
   margin-top: 2rem;
   margin-bottom: 0.25rem;
+}
+
+/* ===== Settings ===== */
+.settings-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-hint {
+  max-width: 36rem;
+  font-size: var(--step--1);
+}
+
+.file-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.file-btn input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.import-summary {
+  width: 100%;
+  max-width: 36rem;
+  padding: 1rem;
+  border: 1px solid var(--emerald);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+}
+
+.import-summary ul {
+  margin: 0.5rem 0;
+  padding-inline-start: 1.25rem;
+}
+
+.import-warning {
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--gold) 18%, var(--surface));
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.batch-starts {
+  margin-top: 1.5rem;
+}
+
+.batch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+}
+
+.batch-label {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

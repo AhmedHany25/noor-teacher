@@ -8,9 +8,11 @@ export type Academy = {
   payMode: PayMode
   rate: number
   archived: boolean
+  /** Start of the current unpaid batch; empty = the day after the last payment. */
+  trackFrom?: string
 }
 
-export type AcademyInput = Omit<Academy, 'id'>
+export type AcademyInput = Omit<Academy, 'id' | 'trackFrom'>
 
 export const CURRENCIES = ['جنيه', 'ريال', 'درهم', 'دينار', 'دولار', 'يورو']
 

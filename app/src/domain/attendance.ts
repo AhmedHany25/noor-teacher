@@ -82,6 +82,8 @@ export function unrecordedLessons(
   today: string,
   nowTime: string,
   days: number,
+  /** Lessons before this date (per group) are treated as settled and left out. */
+  since: (groupId: string) => string | undefined = () => undefined,
 ): Occurrence[] {
   const recorded = new Set(sessions.map((s) => s.id))
   const out: Occurrence[] = []
@@ -90,6 +92,8 @@ export function unrecordedLessons(
     for (const o of occurrencesOn(groups, date)) {
       if (o.cancelledBy) continue
       if (date === today && o.time > nowTime) continue
+      const start = since(o.groupId)
+      if (start && date < start) continue
       if (!recorded.has(sessionId(o.groupId, date))) out.push(o)
     }
   }

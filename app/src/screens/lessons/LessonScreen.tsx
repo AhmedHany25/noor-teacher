@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { Field } from '../../components/Field'
+import { PageHeader } from '../../components/PageHeader'
 import { useData, useGroups, useSessions, useStudents } from '../../data/data'
 import {
   STATUS_TEXT,
@@ -135,12 +136,14 @@ function Lesson({ group, lesson, session, students }: { group: Group; lesson: Oc
 
   return (
     <div className="form">
-      <header>
-        <h1 className="screen-title lesson-heading">{title}</h1>
-        <p className="lesson-when">
-          {longDate(lesson.date)}، {time12(lesson.time)}، {toArabicDigits(lesson.durationMin)} دقيقة
-        </p>
-      </header>
+      <PageHeader
+        title={title}
+        subtitle={
+          <>
+            {longDate(lesson.date)}، {time12(lesson.time)}، {toArabicDigits(lesson.durationMin)} دقيقة
+          </>
+        }
+      />
 
       {lesson.cancelledBy ? (
         <section className="banner">

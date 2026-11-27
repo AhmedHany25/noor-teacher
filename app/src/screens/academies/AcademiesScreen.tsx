@@ -1,3 +1,4 @@
+import { PageHeader } from '../../components/PageHeader'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAcademies, useData, useGroups, usePayments, useSessions, useStudents } from '../../data/data'
@@ -48,7 +49,7 @@ export function AcademiesScreen() {
 
   return (
     <>
-      <h1 className="screen-title">المستحقات</h1>
+      <PageHeader title="المستحقات" />
 
       {students.length === 0 && academies.length === 0 ? (
         <section className="empty">

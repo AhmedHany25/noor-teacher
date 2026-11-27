@@ -1,3 +1,4 @@
+import { PageHeader } from '../../components/PageHeader'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { Field } from '../../components/Field'
@@ -81,7 +82,7 @@ function PaymentForm({ payers, outstanding }: { payers: Payer[]; outstanding: (k
 
   return (
     <form className="form" onSubmit={save} noValidate>
-      <h1 className="screen-title">تسجيل مبلغ مستلم</h1>
+      <PageHeader title="تسجيل مبلغ مستلم" />
 
       <Field id="payer" label="من">
         <select id="payer" value={key} onChange={(e) => choose(e.target.value)}>

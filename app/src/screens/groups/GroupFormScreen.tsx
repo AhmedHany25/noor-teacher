@@ -1,3 +1,4 @@
+import { PageHeader } from '../../components/PageHeader'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { Field } from '../../components/Field'
@@ -104,7 +105,7 @@ function GroupForm({ group, students, lastGroup }: { group?: Group; students: St
 
   return (
     <form className="form" onSubmit={save} noValidate>
-      <h1 className="screen-title">{group ? groupTitle(group, students) : 'حلقة جديدة'}</h1>
+      <PageHeader title={group ? groupTitle(group, students) : 'حلقة جديدة'} />
 
       <fieldset className={errors.studentIds ? 'field has-error' : 'field'}>
         <legend>الطلاب</legend>
