@@ -27,13 +27,41 @@ type Props = {
   /** False for days still to come: attendance cannot be recorded yet. */
   canRecord?: boolean
   localTimes?: string[]
+  /** Today's compact card: shows the recorded state instead of buttons, and opens `linkTo`. */
+  compact?: boolean
+  linkTo?: string
+  /** Highlight the lesson the teacher came for. */
+  focused?: boolean
+  /** Show a «تفاصيل الحصة» button (notes, homework, message). */
+  showDetails?: boolean
 }
 
-export function LessonRow({ o, group, title, avatarName, session, isNext, canRecord = true, localTimes = [] }: Props) {
+export function LessonRow({
+  o,
+  group,
+  title,
+  avatarName,
+  session,
+  isNext,
+  canRecord = true,
+  localTimes = [],
+  compact = false,
+  linkTo,
+  focused = false,
+  showDetails = false,
+}: Props) {
   const { repos } = useData()
   const status = lessonStatus(session)
-  const href = `/lessons/${o.groupId}/${o.date}`
-  const classes = ['lesson', isNext && 'is-next', o.cancelledBy && 'is-cancelled', status && 'is-recorded']
+  const lessonHref = `/lessons/${o.groupId}/${o.date}`
+  const href = linkTo ?? lessonHref
+  const classes = [
+    'lesson',
+    isNext && 'is-next',
+    o.cancelledBy && 'is-cancelled',
+    status && 'is-recorded',
+    focused && 'is-focus',
+    compact && 'is-compact',
+  ]
     .filter(Boolean)
     .join(' ')
 
@@ -42,7 +70,7 @@ export function LessonRow({ o, group, title, avatarName, session, isNext, canRec
   }
 
   return (
-    <li className={classes}>
+    <li className={classes} id={`lesson-${o.groupId}`}>
       <div className="lesson-top">
         <Avatar name={avatarName ?? title} />
         <Link to={href} className="lesson-main">
@@ -57,16 +85,19 @@ export function LessonRow({ o, group, title, avatarName, session, isNext, canRec
         <span className="lesson-time">{time12(o.time)}</span>
       </div>
 
-      {(isNext || KIND_LABELS[o.kind] || o.cancelledBy || o.movedFrom) && (
+      {(isNext || KIND_LABELS[o.kind] || o.cancelledBy || o.movedFrom || (compact && status)) && (
         <span className="lesson-tags">
           {isNext && <span className="tag tag-next">الحصة الجاية</span>}
+          {compact && status && status !== 'mixed' && <span className={`tag att-tag-${status}`}>{STATUS_TEXT[status]}</span>}
+          {compact && status === 'mixed' && <span className="tag">اتسجل الحضور</span>}
           {KIND_LABELS[o.kind] && <span className="tag">{KIND_LABELS[o.kind]}</span>}
           {o.cancelledBy && <span className="tag tag-muted">ملغاة</span>}
           {o.movedFrom && <span className="tag">منقولة</span>}
         </span>
       )}
 
-      {!o.cancelledBy &&
+      {!compact &&
+        !o.cancelledBy &&
         canRecord &&
         (group.studentIds.length === 1 ? (
           <span className="att" role="group" aria-label={`حضور ${title}`}>
@@ -85,11 +116,17 @@ export function LessonRow({ o, group, title, avatarName, session, isNext, canRec
           </span>
         ) : (
           <span className="att">
-            <Link to={href} className="btn btn-quiet att-link">
+            <Link to={lessonHref} className="btn btn-quiet att-link">
               {status ? 'تعديل الحضور' : 'سجّل الحضور'}
             </Link>
           </span>
         ))}
+
+      {showDetails && !o.cancelledBy && (
+        <Link to={lessonHref} className="lesson-details" aria-label={`تفاصيل حصة ${title}`}>
+          تفاصيل الحصة (الملاحظات والرسالة)
+        </Link>
+      )}
     </li>
   )
 }

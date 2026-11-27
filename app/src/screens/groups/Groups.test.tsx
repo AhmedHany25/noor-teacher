@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { Group } from '../../domain/schedule'
@@ -139,5 +139,27 @@ describe('Today', () => {
   it('guides a new teacher to add students, then groups', () => {
     renderApp('/', {}, { now: NOW })
     expect(screen.getByRole('link', { name: 'أضف طلابك' })).toHaveAttribute('href', '/students/new')
+  })
+})
+
+describe('Weekly schedule', () => {
+  it('shows each day with its load and free times, and copies them for an academy', async () => {
+    const { repos } = renderApp(
+      '/groups',
+      { students: [yusuf], groups: [group({ slots: [{ weekday: 6, time: '15:00' }], durationMin: 60 })] },
+      { now: NOW },
+    )
+    await userEvent.click(screen.getByRole('tab', { name: 'الجدول الأسبوعي' }))
+    const days = within(screen.getByRole('list', { name: 'أيام الأسبوع' })).getAllByRole('listitem')
+    expect(days).toHaveLength(7)
+    expect(days[0]).toHaveTextContent('السبت')
+    expect(days[0]).toHaveTextContent('١ حصة، ١ ساعة')
+    expect(days[0]).toHaveTextContent('فاضي: ٢:٠٠ م – ٣:٠٠ م، ٤:٠٠ م – ١١:٠٠ م')
+
+    fireEvent.change(screen.getByLabelText('بداية الشغل'), { target: { value: '16:00' } })
+    expect(repos.profileNow().workHours).toEqual({ from: '16:00', to: '23:00' })
+
+    const wa = screen.getByRole('link', { name: 'إرسال بواتساب' })
+    expect(decodeURIComponent(wa.getAttribute('href')!)).toContain('مواعيدي الفاضية (بتوقيت مصر):')
   })
 })

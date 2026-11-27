@@ -44,42 +44,81 @@ describe('Month-end reminder', () => {
   })
 })
 
-describe('Today calendar', () => {
-  it('shows the week with the number of lessons per day', () => {
+describe('Today', () => {
+  it("shows only today's lessons as compact cards that open the attendance page", () => {
     renderApp('/', seed, { now: NOW })
+    expect(screen.queryByRole('region', { name: 'الجدول' })).not.toBeInTheDocument()
+    const items = within(screen.getByRole('list', { name: 'حصص اليوم' })).getAllByRole('listitem')
+    expect(items).toHaveLength(1)
+    expect(items[0]).toHaveTextContent('يوسف')
+    expect(within(items[0]).getByRole('link', { name: /يوسف/ })).toHaveAttribute('href', '/attendance?date=2026-11-27&focus=fri')
+    expect(screen.queryByRole('button', { name: 'يوسف: حضر' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Student reminders on Today', () => {
+  it('lists reminders required by the academy and opens WhatsApp with the message', async () => {
+    const academy = { id: 'a1', name: 'الفرقان', currency: 'ريال', payMode: 'session' as const, rate: 40, archived: false, remindHours: 4 }
+    const { repos } = renderApp(
+      '/',
+      { ...seed, academies: [academy], students: [{ ...yusuf, academyId: 'a1', guardianPhone: '01012345678' }, omar] },
+      { now: NOW },
+    )
+    const card = screen.getByRole('region', { name: 'تذكيرات الطلاب' })
+    expect(card).toHaveTextContent('يوسف')
+    // Lesson at 5 pm, reminder 4 hours before: 1 pm. The test clock is noon.
+    expect(card).toHaveTextContent('تذكّره الساعة ١:٠٠ م')
+    const link = within(card).getByRole('link', { name: 'ذكّر يوسف' })
+    expect(decodeURIComponent(link.getAttribute('href')!)).toContain('تذكير بحصة يوسف اليوم الساعة ٥:٠٠ م')
+    expect(link.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/201012345678\?text=/)
+    await userEvent.click(link)
+    expect(repos.reminderMarks.all().map((m) => m.id)).toEqual(['fri:2026-11-27:17:00:s1'])
+    expect(card).toHaveTextContent('اتبعت ✓')
+  })
+
+  it('stays hidden when no academy asks for reminders', () => {
+    renderApp('/', seed, { now: NOW })
+    expect(screen.queryByRole('region', { name: 'تذكيرات الطلاب' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Attendance page calendar', () => {
+  it('shows the week with the number of lessons per day', () => {
+    renderApp('/attendance', seed, { now: NOW })
     const cal = screen.getByRole('region', { name: 'الجدول' })
-    expect(within(cal).getByRole('button', { name: /٢٧ نوفمبر: ١ حصة/ })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(cal).getByRole('button', { name: /٢٧ نوفمبر: ١ حصة/ })).toBeInTheDocument()
     expect(within(cal).getByRole('button', { name: /٢٢ نوفمبر: لا حصص/ })).toBeInTheDocument()
   })
 
-  it("opens another day's lessons, with attendance only for days that came", async () => {
-    renderApp('/', seed, { now: NOW })
+  it("opens a day's lessons, with attendance only for days that came", async () => {
+    renderApp('/attendance', seed, { now: NOW })
     const cal = screen.getByRole('region', { name: 'الجدول' })
-
     await userEvent.click(within(cal).getByRole('button', { name: /٢٦ نوفمبر/ }))
     const yesterday = screen.getByRole('list', { name: /حصص .*٢٦ نوفمبر/ })
     expect(yesterday).toHaveTextContent('عمر')
     expect(within(yesterday).getByRole('button', { name: 'عمر: حضر' })).toBeInTheDocument()
-    expect(screen.queryByText('حصص اليوم')).not.toBeInTheDocument() // stats are for today only
   })
 
-  it('moves to next week and shows upcoming lessons without attendance buttons', async () => {
-    renderApp('/', seed, { now: NOW })
+  it('shows upcoming lessons without attendance buttons', async () => {
+    renderApp('/attendance', seed, { now: NOW })
     await userEvent.click(screen.getByRole('button', { name: 'الأسبوع التالي' }))
-    // Selected day jumps a week ahead: Friday 4 Dec.
     expect(screen.getByRole('list', { name: /حصص .*٤ ديسمبر/ })).toHaveTextContent('يوسف')
     expect(screen.queryByRole('button', { name: 'يوسف: حضر' })).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'النهارده' }))
-    expect(screen.getByRole('list', { name: 'حصص اليوم' })).toBeInTheDocument()
   })
 
-  it('unfolds into the whole month and picks a day from it', async () => {
-    renderApp('/', seed, { now: NOW })
-    await userEvent.click(screen.getByRole('button', { name: 'الشهر' }))
-    const cal = screen.getByRole('region', { name: 'الجدول' })
-    expect(within(cal).getAllByRole('button', { name: /نوفمبر/ }).length).toBeGreaterThanOrEqual(30)
-    await userEvent.click(within(cal).getByRole('button', { name: /١٤ نوفمبر/ }))
-    expect(screen.getByRole('list', { name: /حصص .*١٤ نوفمبر/ })).toHaveTextContent('عمر')
-    expect(screen.getByRole('button', { name: 'الشهر' })).toBeInTheDocument() // folded back to the week
+  it('highlights the lesson the teacher came for from Today', () => {
+    renderApp('/attendance?date=2026-11-27&focus=fri', seed, { now: NOW })
+    const items = within(screen.getByRole('list', { name: /حصص .*٢٧ نوفمبر/ })).getAllByRole('listitem')
+    expect(items[0]).toHaveClass('is-focus')
+    expect(within(items[0]).getByRole('link', { name: 'تفاصيل حصة يوسف' })).toHaveAttribute('href', '/lessons/fri/2026-11-27')
+  })
+
+  it('filters by student and counts per state', async () => {
+    renderApp('/attendance', seed, { now: NOW })
+    await userEvent.click(screen.getByRole('button', { name: 'الشهر ده' }))
+    await userEvent.selectOptions(screen.getByLabelText('الطالب'), 's2')
+    const region = screen.getByRole('region', { name: 'الحصص' })
+    expect(region).not.toHaveTextContent('يوسف')
+    expect(screen.getByRole('button', { name: /^الكل/ })).toHaveTextContent('٨') // omar: 4 Thursdays + 4 Saturdays in November
   })
 })

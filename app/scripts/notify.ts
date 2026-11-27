@@ -8,6 +8,7 @@
 import { cert, initializeApp, type ServiceAccount } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { getMessaging } from 'firebase-admin/messaging'
+import type { Academy } from '../src/domain/academy'
 import type { Session } from '../src/domain/attendance'
 import { DEFAULT_NOTIFY, dueReminders, type NotifySettings } from '../src/domain/reminders'
 import type { Group } from '../src/domain/schedule'
@@ -43,13 +44,16 @@ async function main() {
     const devices = await user.collection('devices').get()
     if (devices.empty) continue
 
-    const [profile, groupsSnap, studentsSnap, sessionsSnap, logSnap] = await Promise.all([
+    const [profile, groupsSnap, studentsSnap, sessionsSnap, logSnap, academiesSnap] = await Promise.all([
       user.get(),
       user.collection('groups').get(),
       user.collection('students').get(),
       user.collection('sessions').where('date', '==', today).get(),
       user.collection('notifyLog').where('date', '==', today).get(),
+      user.collection('academies').get(),
     ])
+    // Student reminders the teacher already sent from the app (keys contain the lesson date).
+    const marksSnap = await user.collection('studentReminders').where('sentAt', '>=', Date.now() - 2 * 86_400_000).get()
     const settings: NotifySettings = { ...DEFAULT_NOTIFY, ...(profile.data()?.notify as Partial<NotifySettings> | undefined) }
     const due = dueReminders({
       today,
@@ -59,6 +63,8 @@ async function main() {
       sessions: sessionsSnap.docs.map((d) => ({ ...(d.data() as Omit<Session, 'id'>), id: d.id })),
       settings,
       sent: new Set(logSnap.docs.map((d) => d.id)),
+      academies: academiesSnap.docs.map((d) => ({ ...(d.data() as Omit<Academy, 'id'>), id: d.id })),
+      marked: new Set(marksSnap.docs.map((d) => d.id)),
     })
     if (!due.length) continue
 
@@ -79,8 +85,8 @@ async function main() {
       await Promise.all(
         res.responses.map((x, i) => (!x.success && STALE_TOKEN.has(x.error?.code ?? '') ? user.collection('devices').doc(tokens[i]).delete() : null)),
       )
-      // Log by key so the next run does not send it again.
-      await user.collection('notifyLog').doc(r.key).set({ date: today, at: Date.now(), delivered: res.successCount })
+      // Log by key so the next run does not send it again; the app shows this log under the bell.
+      await user.collection('notifyLog').doc(r.key).set({ date: today, at: Date.now(), delivered: res.successCount, title: r.title, body: r.body, url: r.url })
       sentCount += res.successCount
     }
   }

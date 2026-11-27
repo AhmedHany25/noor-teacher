@@ -4,7 +4,7 @@ import type { Payment } from '../domain/dues'
 import type { BackupData } from '../domain/importData'
 import type { Group } from '../domain/schedule'
 import type { Student } from '../domain/student'
-import type { CollectionRepo, Device, Profile, Repos } from './repos'
+import type { CollectionRepo, Device, NotificationEntry, Profile, ReminderMark, Repos } from './repos'
 
 type Store<T> = { all: () => T[] }
 
@@ -65,7 +65,7 @@ function memRepo<T extends { id: string }, I extends object>(
 
 /** In-memory repos with the same contract as Firestore, for tests. */
 export function memoryRepos(
-  seed: { students?: Student[]; academies?: Academy[]; groups?: Group[]; sessions?: Session[]; payments?: Payment[]; profile?: Profile } = {},
+  seed: { students?: Student[]; academies?: Academy[]; groups?: Group[]; sessions?: Session[]; payments?: Payment[]; profile?: Profile; notifications?: NotificationEntry[] } = {},
 ) {
   let legacy: Record<string, unknown> = {}
   let profile: Profile = seed.profile ?? {}
@@ -77,6 +77,7 @@ export function memoryRepos(
     sessions: memRepo<Session, Omit<Session, 'id'>>('x', seed.sessions ?? []),
     payments: memRepo<Payment, Omit<Payment, 'id'>>('p', seed.payments ?? []),
     devices: memRepo<Device, Omit<Device, 'id'>>('d', []),
+    reminderMarks: memRepo<ReminderMark, Omit<ReminderMark, 'id'>>('r', []),
   }
   return {
     ...repos,
@@ -88,6 +89,12 @@ export function memoryRepos(
       legacy = { ...legacy, ...data.legacy }
     },
     loadLegacy: async () => legacy,
+    notifications: {
+      subscribe: (cb: (l: NotificationEntry[]) => void) => {
+        cb([...(seed.notifications ?? [])].sort((a, b) => b.at - a.at))
+        return () => {}
+      },
+    },
     profile: {
       subscribe: (cb: (p: Profile) => void) => {
         profileListeners.add(cb)

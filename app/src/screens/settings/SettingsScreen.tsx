@@ -40,6 +40,7 @@ export function SettingsScreen() {
       <AppearanceSection />
       <ImportSection />
       <BackupSection />
+      <p className="app-version">النسخة: {versionText()}</p>
     </>
   )
 }
@@ -190,4 +191,12 @@ function AppearanceSection() {
       <p className="field-hint settings-hint">«تلقائي» بيمشي مع إعداد الموبايل أو الكمبيوتر. الاختيار محفوظ على الجهاز ده.</p>
     </section>
   )
+}
+
+const versionFmt = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' })
+
+/** The build time of the running version, so the teacher can tell whether an update arrived. */
+function versionText(): string {
+  const v = typeof __APP_VERSION__ === 'string' ? new Date(__APP_VERSION__) : undefined
+  return v && !Number.isNaN(v.getTime()) ? versionFmt.format(v) : 'تطوير'
 }

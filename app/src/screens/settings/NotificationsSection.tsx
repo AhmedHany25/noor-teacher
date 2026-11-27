@@ -126,6 +126,23 @@ export function NotificationsSection({ push }: { push: PushApi }) {
         {settings.morningOn && (
           <input type="time" aria-label="وقت ملخص الصبح" value={settings.morningTime} onChange={(e) => e.target.value && set({ morningTime: e.target.value })} />
         )}
+
+        <label className="field">
+          <span>تذكير أولياء أمور الطلاب الخصوصي قبل الحصة</span>
+          <select
+            aria-label="تذكير الطلاب الخصوصي"
+            value={settings.privateRemindHours ?? 0}
+            onChange={(e) => set({ privateRemindHours: Number(e.target.value) })}
+          >
+            <option value={0}>مش مطلوب</option>
+            {[1, 2, 3, 4, 6, 12, 24].map((h) => (
+              <option key={h} value={h}>
+                قبلها بـ {toArabicDigits(h)} {h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : h <= 10 ? 'ساعات' : 'ساعة'}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p className="field-hint">طلاب الأكاديميات بيتحدد تذكيرهم من إعدادات كل أكاديمية.</p>
       </div>
       <p className="field-hint settings-hint">
         المواعيد بتوقيت مصر، والتذكير ممكن يتأخر دقايق قليلة.{' '}

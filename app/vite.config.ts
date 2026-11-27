@@ -3,10 +3,16 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  define: {
+    // Build time, shown as the app version in Settings.
+    __APP_VERSION__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registered by src/lib/updates.ts, which avoids reloading while the teacher is typing.
+      injectRegister: false,
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',

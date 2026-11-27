@@ -8,6 +8,8 @@ export type Academy = {
   payMode: PayMode
   rate: number
   archived: boolean
+  /** Remind each student this many hours before a lesson (some academies require it); empty = off. */
+  remindHours?: number
   /** Start of the current unpaid batch; empty = the day after the last payment. */
   trackFrom?: string
 }

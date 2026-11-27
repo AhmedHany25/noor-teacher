@@ -31,7 +31,7 @@ export function StudentsScreen() {
         subtitle={loading ? undefined : `${toArabicDigits(counts.active)} طالب نشط`}
         action={
           <div className="band-actions">
-            <Link to="/reports" className="btn btn-ghost-light">
+            <Link to="/reports/parents" className="btn btn-ghost-light">
               التقارير الشهرية
             </Link>
             <Link to="/students/new" className="btn btn-gold">

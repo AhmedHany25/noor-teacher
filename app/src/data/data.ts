@@ -4,7 +4,7 @@ import type { Session } from '../domain/attendance'
 import type { Payment } from '../domain/dues'
 import type { Group } from '../domain/schedule'
 import type { Student } from '../domain/student'
-import type { CollectionRepo, Device, Profile, Repos } from './repos'
+import type { CollectionRepo, Device, NotificationEntry, Profile, ReminderMark, Repos } from './repos'
 
 export type DataContextValue = {
   repos: Repos
@@ -53,6 +53,23 @@ export const useGroups = (): Live<Group> => useLive(useData().repos.groups)
 export const useSessions = (): Live<Session> => useLive(useData().repos.sessions)
 export const usePayments = (): Live<Payment> => useLive(useData().repos.payments)
 export const useDevices = (): Live<Device> => useLive(useData().repos.devices)
+export const useReminderMarks = (): Live<ReminderMark> => useLive(useData().repos.reminderMarks)
+
+/** Delivered reminders (last 30 days, newest first). */
+export function useNotifications(): { items: NotificationEntry[]; loading: boolean } {
+  const { repos } = useData()
+  const [state, setState] = useState<{ items: NotificationEntry[]; loading: boolean }>({ items: [], loading: true })
+  const subscribe = repos.notifications.subscribe
+  useEffect(
+    () =>
+      subscribe(
+        (items) => setState({ items, loading: false }),
+        () => setState((s) => ({ ...s, loading: false })),
+      ),
+    [subscribe],
+  )
+  return state
+}
 
 /** The teacher's settings document (reminder choices, …). */
 export function useProfile(): { profile: Profile; loading: boolean } {

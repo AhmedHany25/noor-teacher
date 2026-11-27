@@ -838,3 +838,239 @@
 .band-text {
   flex: 1 1 9rem;
 }
+
+/* ===== Update bar and version ===== */
+.update-bar {
+  position: fixed;
+  inset-inline: 0.75rem;
+  top: calc(0.75rem + env(safe-area-inset-top));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 30rem;
+  margin-inline: auto;
+  padding: 0.6rem 0.75rem 0.6rem 1rem;
+  border-radius: 14px;
+  background: var(--band-deep);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.app-version {
+  padding: 1.25rem 0 0.5rem;
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* ===== Navigation split: phone bar vs desktop rail ===== */
+.nav-link.rail-only {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .nav-link.rail-only {
+    display: flex;
+  }
+
+  .nav-link.mobile-only {
+    display: none;
+  }
+}
+
+/* ===== Bell ===== */
+.shell-main {
+  position: relative;
+}
+
+.bell {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 0.9rem);
+  inset-inline-end: 0.9rem;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.bell svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.bell.active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.bell-count {
+  position: absolute;
+  top: -0.15rem;
+  inset-inline-start: -0.15rem;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--gold-bright);
+  color: #2b1d00;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+/* Keep header titles and buttons clear of the bell. */
+.band-inner {
+  padding-inline-end: 3rem;
+}
+
+@media (min-width: 900px) {
+  .bell {
+    top: 2.1rem;
+    inset-inline-end: 2.75rem;
+  }
+}
+
+/* ===== More ===== */
+.more-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.more-link {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--shadow-card);
+}
+
+.more-icon {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 14px;
+  background: var(--emerald-soft);
+  color: var(--emerald);
+}
+
+.more-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.more-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.more-text span {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+/* ===== Notifications log ===== */
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notif {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.notif.is-new {
+  border-color: var(--gold);
+  box-shadow: inset 4px 0 0 var(--gold);
+}
+
+.notif-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.75rem 0.9rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.notif-body,
+.notif-time {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.notif-time {
+  font-size: 0.75rem;
+}
+
+/* ===== Attendance page ===== */
+.filters { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.8rem; }
+.filters select, .filters input { width: 100%; min-height: 2.6rem; padding: 0.35rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; }
+.chip-row, .state-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.state-chips { margin-bottom: 1rem; }
+.state-chip { display: inline-flex; gap: 0.35rem; align-items: center; padding: 0.3rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.state-chip[aria-pressed=true] { border-color: var(--emerald); background: var(--emerald); color: var(--paper); }
+.lesson.is-focus { border: 2px solid var(--emerald); }
+.lesson-details { display: block; margin-top: 0.6rem; font-size: var(--step--1); font-weight: 700; }
+.day-heading .tag { margin-inline-start: 0.5rem; }
+
+/* ===== Student reminders on Today ===== */
+.reminder-list { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.reminder { display: flex; align-items: center; gap: 0.65rem; padding: 0.55rem 0; }
+.reminder + .reminder { border-top: 1px solid var(--line); }
+.reminder-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.reminder-text span { color: var(--ink-muted); font-size: var(--step--1); }
+.reminder.is-due .reminder-text span { color: var(--gold-ink); font-weight: 700; }
+.reminder.is-sent { opacity: 0.7; }
+
+/* ===== Groups view tabs and weekly schedule ===== */
+.view-tabs { margin-bottom: 1rem; }
+.week-head { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 0.9rem; }
+.week-totals { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; color: var(--ink-muted); font-weight: 600; }
+.week-totals b { color: var(--emerald); font-size: 1.2rem; }
+.week-head input { width: 100%; min-height: 2.6rem; padding: 0.35rem 0.6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; }
+.week-days { display: flex; flex-direction: column; gap: 0.6rem; margin: 0; padding: 0; list-style: none; }
+.week-row { padding: 0.75rem 0.85rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow-card); }
+.week-row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.45rem; }
+.week-bar { position: relative; height: 0.9rem; border-radius: 999px; background: var(--paper); overflow: hidden; }
+.seg { position: absolute; top: 0; bottom: 0; }
+.seg-free { background: color-mix(in srgb, var(--gold) 28%, transparent); }
+.seg-busy { background: var(--emerald); border-radius: 3px; }
+.week-scale { display: flex; justify-content: space-between; margin-top: 0.15rem; color: var(--ink-muted); font-size: 0.7rem; }
+.week-free { margin-top: 0.35rem; font-size: var(--step--1); }
+.week-free-label { font-weight: 800; color: var(--gold-ink); }
+.week-full { color: var(--ink-muted); }
+.week-actions { margin-top: 1rem; }
+
+/* ===== Reports ===== */
+.table-card { overflow-x: auto; }
+.report-table { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+.report-table th, .report-table td { padding: 0.5rem 0.4rem; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.report-table th { color: var(--ink-muted); font-weight: 700; }
+.report-table td:first-child, .report-table th:first-child { text-align: start; font-weight: 700; }
+.money-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.money-rows > div { display: flex; flex-direction: column; gap: 0.15rem; }
+.money-rows b { font-size: 1.1rem; color: var(--emerald); }
+.summary-list li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.45rem 0; border-bottom: 1px solid var(--line); }

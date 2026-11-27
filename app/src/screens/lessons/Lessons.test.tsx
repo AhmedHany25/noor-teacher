@@ -24,9 +24,9 @@ const group = (over: Partial<Group> = {}): Group => ({
 const FRI = '2026-11-27'
 const NOW = new Date(2026, 10, 27, 12, 0) // Friday noon, after the 9 am lesson
 
-describe('Quick attendance on Today', () => {
+describe('Quick attendance on the attendance page', () => {
   it('records attendance for a one-student lesson with one tap', async () => {
-    const { repos } = renderApp('/', { students: [yusuf], groups: [group()] }, { now: NOW })
+    const { repos } = renderApp(`/attendance?date=${FRI}`, { students: [yusuf], groups: [group()] }, { now: NOW })
     await userEvent.click(screen.getByRole('button', { name: 'يوسف: حضر' }))
     expect(repos.sessions.all()).toMatchObject([
       { id: 'g1_2026-11-27', groupId: 'g1', date: FRI, attendance: { s1: { status: 'p', billable: true } } },
@@ -35,7 +35,7 @@ describe('Quick attendance on Today', () => {
   })
 
   it('changes a recorded status with another tap', async () => {
-    const { repos } = renderApp('/', { students: [yusuf], groups: [group()] }, { now: NOW })
+    const { repos } = renderApp(`/attendance?date=${FRI}`, { students: [yusuf], groups: [group()] }, { now: NOW })
     await userEvent.click(screen.getByRole('button', { name: 'يوسف: حضر' }))
     await userEvent.click(screen.getByRole('button', { name: 'يوسف: اعتذر' }))
     expect(repos.sessions.all()).toHaveLength(1)
@@ -43,7 +43,7 @@ describe('Quick attendance on Today', () => {
   })
 
   it('sends multi-student lessons to the lesson page instead', () => {
-    renderApp('/', { students: [yusuf, omar], groups: [group({ studentIds: ['s1', 's2'] })] }, { now: NOW })
+    renderApp(`/attendance?date=${FRI}`, { students: [yusuf, omar], groups: [group({ studentIds: ['s1', 's2'] })] }, { now: NOW })
     expect(screen.getByRole('link', { name: 'سجّل الحضور' })).toHaveAttribute('href', `/lessons/g1/${FRI}`)
   })
 })
@@ -125,28 +125,29 @@ describe('Lesson page', () => {
 })
 
 describe('Missed lessons', () => {
-  it('warns on Today and lists them for quick recording', async () => {
+  it('counts them on Today and lists them on the attendance page for quick recording', async () => {
     const { repos } = renderApp('/', { students: [yusuf], groups: [group()] }, { now: NOW })
-    // Today's 9 am lesson plus the three earlier Fridays this month (6, 13, 20) are unrecorded.
-    await userEvent.click(screen.getByRole('link', { name: /حصص فاتت من غير تسجيل/ }))
-    expect(screen.getByRole('heading', { level: 1, name: 'حصص لم تُسجَّل' })).toBeInTheDocument()
-    const list = screen.getByRole('region', { name: 'حصص لم تُسجَّل' })
-    expect(within(list).getAllByRole('listitem')).toHaveLength(4)
-    await userEvent.click(within(list).getAllByRole('button', { name: 'يوسف: غاب' })[0])
+    // Three earlier Fridays this month (6, 13, 20) are unrecorded; today's lesson is on screen already.
+    await userEvent.click(screen.getByRole('link', { name: /٣ حصص فاتت من غير تسجيل/ }))
+    expect(screen.getByRole('heading', { level: 1, name: 'الحضور والغياب' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /لم تُسجَّل/ })).toHaveAttribute('aria-pressed', 'true')
+    const region = screen.getByRole('region', { name: 'الحصص' })
+    expect(within(region).getAllByRole('listitem')).toHaveLength(4) // the three plus today's
+    await userEvent.click(within(region).getAllByRole('button', { name: 'يوسف: غاب' })[0])
     expect(repos.sessions.all()).toHaveLength(1)
-    expect(within(screen.getByRole('region', { name: 'حصص لم تُسجَّل' })).getAllByRole('listitem')).toHaveLength(3)
+    expect(within(screen.getByRole('region', { name: 'الحصص' })).getAllByRole('listitem')).toHaveLength(3)
   })
 
-  it('says all caught up when nothing is missing', () => {
+  it('says all caught up when nothing is missing (old /review link still works)', () => {
     renderApp('/review', { students: [yusuf], groups: [group({ startDate: FRI, slots: [{ weekday: 5, time: '18:00' }] })] }, { now: NOW })
-    expect(screen.getByText('كل حصص الدفعة الحالية متسجلة.')).toBeInTheDocument()
+    expect(screen.getByText('كل حصص الفترة دي متسجلة.')).toBeInTheDocument()
   })
 })
 
 describe('Missed lessons and the current batch', () => {
-  it('ignores lessons before the last payment from that payer', () => {
+  it('does not count lessons before the last payment from that payer', () => {
     renderApp(
-      '/review',
+      '/',
       {
         students: [yusuf],
         groups: [group()],
@@ -154,16 +155,14 @@ describe('Missed lessons and the current batch', () => {
       },
       { now: NOW },
     )
-    const items = within(screen.getByRole('region', { name: 'حصص لم تُسجَّل' })).getAllByRole('listitem')
-    expect(items).toHaveLength(2) // Nov 20 and 27 only
+    expect(screen.getByRole('link', { name: /١ حصص فاتت من غير تسجيل/ })).toBeInTheDocument() // only Nov 20
   })
 
-  it('lets the teacher set where a batch starts', async () => {
-    const { repos } = renderApp('/review', { students: [yusuf], groups: [group()] }, { now: NOW })
+  it('lets the teacher set where a batch starts from the attendance page', async () => {
+    const { repos } = renderApp('/attendance', { students: [yusuf], groups: [group()] }, { now: NOW })
     const input = screen.getByLabelText('بداية دفعة يوسف')
     await userEvent.clear(input)
     await userEvent.type(input, '2026-11-25')
     expect(repos.students.all()[0].trackFrom).toBe('2026-11-25')
-    expect(within(screen.getByRole('region', { name: 'حصص لم تُسجَّل' })).getAllByRole('listitem')).toHaveLength(1)
   })
 })

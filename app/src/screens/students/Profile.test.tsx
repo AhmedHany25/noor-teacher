@@ -76,7 +76,7 @@ describe('Student file', () => {
 
 describe('Monthly reports', () => {
   it('prepares a report per active student and marks it sent', async () => {
-    const { repos } = renderApp('/reports', seed, { now: NOW })
+    const { repos } = renderApp('/reports/parents', seed, { now: NOW })
     expect(screen.getByRole('heading', { level: 2, name: 'نوفمبر ٢٠٢٦' })).toBeInTheDocument()
     const card = screen.getByRole('region', { name: 'تقرير يوسف' })
     const text = within(card).getByLabelText('نص التقرير') as HTMLTextAreaElement

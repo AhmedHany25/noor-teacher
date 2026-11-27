@@ -84,7 +84,7 @@ export function StudentProfileScreen() {
             واتساب ولي الأمر
           </a>
         )}
-        <Link className="btn btn-quiet" to="/reports">
+        <Link className="btn btn-quiet" to="/reports/parents">
           التقرير الشهري
         </Link>
         <Link className="btn btn-quiet" to={`/groups/new?student=${s.id}`}>

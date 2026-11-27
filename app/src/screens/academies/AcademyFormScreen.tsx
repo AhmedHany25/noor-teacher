@@ -2,7 +2,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Field } from '../../components/Field'
-import { parseNumber } from '../../lib/format'
+import { parseNumber, toArabicDigits } from '../../lib/format'
 import { useAcademies, useData } from '../../data/data'
 import { CURRENCIES, validateAcademy, type Academy, type AcademyErrors, type AcademyInput } from '../../domain/academy'
 import { PAY_MODE_LABELS, type PayMode } from '../../domain/student'
@@ -35,6 +35,7 @@ function AcademyForm({ academy, others }: { academy?: Academy; others: Academy[]
   const [payMode, setPayMode] = useState<PayMode>(academy?.payMode ?? 'session')
   const [rate, setRate] = useState(academy ? String(academy.rate) : '')
   const [archived, setArchived] = useState(academy?.archived ?? false)
+  const [remindHours, setRemindHours] = useState(academy?.remindHours ?? 0)
   const [errors, setErrors] = useState<AcademyErrors>({})
 
   function save(e: FormEvent) {
@@ -45,6 +46,7 @@ function AcademyForm({ academy, others }: { academy?: Academy; others: Academy[]
       payMode,
       rate: parseNumber(rate) ?? Number.NaN,
       archived,
+      remindHours: remindHours || undefined,
     }
     const found = validateAcademy(input, others)
     setErrors(found)
@@ -88,6 +90,17 @@ function AcademyForm({ academy, others }: { academy?: Academy; others: Academy[]
           </datalist>
         </Field>
       </div>
+
+      <Field id="remind" label="تذكير الطالب قبل الحصة" hint="لو الأكاديمية بتشترط تذكّر الطالب بالحلقة. هيوصلك إشعار في الميعاد ورسالة جاهزة.">
+        <select id="remind" value={remindHours} onChange={(e) => setRemindHours(Number(e.target.value))}>
+          <option value={0}>مش مطلوب</option>
+          {[1, 2, 3, 4, 6, 12, 24].map((h) => (
+            <option key={h} value={h}>
+              قبلها بـ {toArabicDigits(h)} {h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : h <= 10 ? 'ساعات' : 'ساعة'}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       {academy && (
         <label className="check">

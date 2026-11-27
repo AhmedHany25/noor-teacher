@@ -54,3 +54,14 @@ export function untilText(minutes: number): string {
   const hours = h === 1 ? 'ساعة' : h === 2 ? 'ساعتين' : `${toArabicDigits(h)} ${h <= 10 ? 'ساعات' : 'ساعة'}`
   return m ? `${hours} و${mins(m)}` : hours
 }
+
+/** «دلوقتي», «من ٥ دقائق», «من ساعتين», «امبارح», or a date for older times. */
+export function agoText(at: number, now: number): string {
+  const min = Math.max(0, Math.round((now - at) / 60000))
+  if (min < 1) return 'دلوقتي'
+  if (min < 60) return `من ${toArabicDigits(min)} ${min >= 3 && min <= 10 ? 'دقائق' : 'دقيقة'}`
+  const h = Math.round(min / 60)
+  if (h < 24) return h === 1 ? 'من ساعة' : h === 2 ? 'من ساعتين' : `من ${toArabicDigits(h)} ${h <= 10 ? 'ساعات' : 'ساعة'}`
+  if (h < 48) return 'امبارح'
+  return toArabicDigits(new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', timeZone: 'Africa/Cairo' }).format(new Date(at)))
+}

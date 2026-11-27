@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDayName, formatGregorian, formatHijri, toArabicDigits, untilText } from './format'
+import { agoText, formatDayName, formatGregorian, formatHijri, toArabicDigits, untilText } from './format'
 
 // 2026-11-27 is a Friday. Built at local noon so time zones cannot shift the day.
 const friday = new Date(2026, 10, 27, 12, 0, 0)
@@ -51,5 +51,16 @@ describe('untilText', () => {
     expect(untilText(70)).toBe('ساعة و١٠ دقائق')
     expect(untilText(125)).toBe('ساعتين و٥ دقائق')
     expect(untilText(180)).toBe('٣ ساعات')
+  })
+})
+
+describe('agoText', () => {
+  const now = Date.UTC(2026, 10, 27, 12, 0)
+  it('says how long ago in plain Arabic', () => {
+    expect(agoText(now - 10_000, now)).toBe('دلوقتي')
+    expect(agoText(now - 5 * 60_000, now)).toBe('من ٥ دقائق')
+    expect(agoText(now - 2 * 3_600_000, now)).toBe('من ساعتين')
+    expect(agoText(now - 30 * 3_600_000, now)).toBe('امبارح')
+    expect(agoText(now - 5 * 86_400_000, now)).toBe('٢٢ نوفمبر')
   })
 })

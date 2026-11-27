@@ -1,5 +1,8 @@
+import type { Academy } from './academy'
 import { sessionId, type Session } from './attendance'
 import { groupTitle, occurrencesOn, time12, type Group } from './schedule'
+import { studentRemindersFor } from './studentReminders'
+import type { Student } from './student'
 
 /** The teacher's reminder choices, stored on users/{uid}.notify. Times are Egypt time, "HH:mm". */
 export type NotifySettings = {
@@ -9,6 +12,8 @@ export type NotifySettings = {
   eodTime: string
   morningOn: boolean
   morningTime: string
+  /** Remind private students' families this many hours before a lesson; 0 = off. */
+  privateRemindHours?: number
 }
 
 export const DEFAULT_NOTIFY: NotifySettings = {
@@ -40,12 +45,15 @@ export function dueReminders(input: {
   today: string
   nowTime: string
   groups: Group[]
-  students: { id: string; name: string }[]
+  students: Student[]
   sessions: Session[]
   settings: NotifySettings
   sent: Set<string>
+  /** For student reminders: the academies (their reminder hours) and the reminders already sent from the app. */
+  academies?: Academy[]
+  marked?: Set<string>
 }): Reminder[] {
-  const { today, nowTime, groups, students, sessions, settings, sent } = input
+  const { today, nowTime, groups, students, sessions, settings, sent, academies = [], marked = new Set<string>() } = input
   const now = minutesOf(nowTime)
   const lessons = occurrencesOn(groups, today).filter((o) => !o.cancelledBy)
   const title = (groupId: string) => {
@@ -89,6 +97,20 @@ export function dueReminders(input: {
         .slice(0, 5)
         .map((o) => `${title(o.groupId)} ${time12(o.time)}`)
         .join('، '),
+      url: '/',
+    })
+  }
+
+  // Time to remind a student's family (academies that require it): nudge the teacher.
+  for (const r of studentRemindersFor({ today, groups, students, academies, privateHours: settings.privateRemindHours ?? 0 })) {
+    const key = `student:${r.key}`
+    const started = r.date === today && r.time <= nowTime
+    if (r.dueTime > nowTime || started || sent.has(key) || marked.has(r.key)) continue
+    const name = students.find((s) => s.id === r.studentId)?.name ?? ''
+    out.push({
+      key,
+      title: `ذكّر ${name} بحصة ${r.date === today ? '' : 'بكرة '}الساعة ${time12(r.time)}`,
+      body: 'افتح التطبيق وابعت التذكير لولي الأمر على واتساب بضغطة.',
       url: '/',
     })
   }

@@ -55,3 +55,40 @@ export function SettingsIcon() {
     </svg>
   )
 }
+
+export function ChecklistIcon() {
+  return (
+    <svg {...base}>
+      <path d="M9 6h11M9 12h11M9 18h11" />
+      <path d="M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17" />
+    </svg>
+  )
+}
+
+export function MoreIcon() {
+  return (
+    <svg {...base}>
+      <circle cx="5" cy="12" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="19" cy="12" r="1.6" />
+    </svg>
+  )
+}
+
+export function ReportIcon() {
+  return (
+    <svg {...base}>
+      <path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z" />
+      <path d="M14 3.5V8h4M9 13h6M9 17h4" />
+    </svg>
+  )
+}
+
+export function BellIcon() {
+  return (
+    <svg {...base}>
+      <path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+    </svg>
+  )
+}

@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { Avatar } from '../../components/Avatar'
 import { PageHeader } from '../../components/PageHeader'
 import { useAcademies, useGroups, useStudents } from '../../data/data'
 import { WEEKDAY_NAMES, WEEK_ORDER, groupTitle, scheduleText, time12, weekdayOf, type Weekday } from '../../domain/schedule'
 import { useClock } from '../../lib/clock'
 import { toArabicDigits } from '../../lib/format'
+import { WeekSchedule } from './WeekSchedule'
 
 /** One-letter day marks used on the cards, Saturday first. */
 const DAY_MARK: Record<Weekday, string> = { 6: 'س', 0: 'ح', 1: 'ن', 2: 'ث', 3: 'ر', 4: 'خ', 5: 'ج' }
@@ -16,6 +17,8 @@ export function GroupsScreen() {
   const { items: students, loading: loadingStudents } = useStudents()
   const { items: academies } = useAcademies()
   const [day, setDay] = useState<Weekday | null>(null)
+  const [params, setParams] = useSearchParams()
+  const view = params.get("view") === "week" ? "week" : "list"
   if (loading || loadingStudents) return null
 
   const today = weekdayOf(todayDate)
@@ -55,7 +58,20 @@ export function GroupsScreen() {
         }
       />
 
-      {students.length === 0 ? (
+      {students.length > 0 && (
+        <div className="tabs view-tabs" role="tablist" aria-label="العرض">
+          <button type="button" role="tab" className="tab" aria-selected={view === "list"} onClick={() => setParams({})}>
+            الحلقات
+          </button>
+          <button type="button" role="tab" className="tab" aria-selected={view === "week"} onClick={() => setParams({ view: "week" })}>
+            الجدول الأسبوعي
+          </button>
+        </div>
+      )}
+
+      {view === "week" && students.length > 0 ? (
+        <WeekSchedule />
+      ) : students.length === 0 ? (
         <section className="empty card">
           <h2>أضف طلابك أولًا</h2>
           <p>

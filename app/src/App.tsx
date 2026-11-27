@@ -10,11 +10,18 @@ import { AcademyFormScreen } from './screens/academies/AcademyFormScreen'
 import { PaymentFormScreen } from './screens/academies/PaymentFormScreen'
 import { GroupFormScreen } from './screens/groups/GroupFormScreen'
 import { GroupsScreen } from './screens/groups/GroupsScreen'
+import { AttendanceScreen } from './screens/lessons/AttendanceScreen'
 import { LessonScreen } from './screens/lessons/LessonScreen'
 import { ReviewScreen } from './screens/lessons/ReviewScreen'
+import { MoreScreen } from './screens/MoreScreen'
+import { NotificationsScreen } from './screens/NotificationsScreen'
 import { PlannedScreen } from './screens/PlannedScreen'
 import { SettingsScreen } from './screens/settings/SettingsScreen'
 import { SignInScreen } from './screens/SignInScreen'
+import { AcademyStatements } from './screens/reports/AcademyStatements'
+import { AttendanceReport } from './screens/reports/AttendanceReport'
+import { MySummary } from './screens/reports/MySummary'
+import { ReportsHub } from './screens/reports/ReportsHub'
 import { ReportsScreen } from './screens/students/ReportsScreen'
 import { StudentFormScreen } from './screens/students/StudentFormScreen'
 import { StudentProfileScreen } from './screens/students/StudentProfileScreen'
@@ -61,17 +68,24 @@ function SignedInApp({ uid, makeRepos }: { uid: string; makeRepos: (uid: string)
           <Route path="students/new" element={<StudentFormScreen />} />
           <Route path="students/:id" element={<StudentProfileScreen />} />
           <Route path="students/:id/edit" element={<StudentFormScreen />} />
-          <Route path="reports" element={<ReportsScreen />} />
+          <Route path="reports" element={<ReportsHub />} />
+          <Route path="reports/parents" element={<ReportsScreen />} />
+          <Route path="reports/academies" element={<AcademyStatements />} />
+          <Route path="reports/attendance" element={<AttendanceReport />} />
+          <Route path="reports/summary" element={<MySummary />} />
           <Route path="groups" element={<GroupsScreen />} />
           <Route path="groups/new" element={<GroupFormScreen />} />
           <Route path="groups/:id" element={<GroupFormScreen />} />
           <Route path="lessons/:groupId/:date" element={<LessonScreen />} />
           <Route path="review" element={<ReviewScreen />} />
+          <Route path="attendance" element={<AttendanceScreen />} />
           <Route path="academies" element={<AcademiesScreen />} />
           <Route path="academies/new" element={<AcademyFormScreen />} />
           <Route path="academies/:id" element={<AcademyFormScreen />} />
           <Route path="payments/new" element={<PaymentFormScreen />} />
           <Route path="settings" element={<SettingsScreen />} />
+          <Route path="more" element={<MoreScreen />} />
+          <Route path="notifications" element={<NotificationsScreen />} />
           <Route path="*" element={<PlannedScreen title="الصفحة غير موجودة" what="ارجع إلى «اليوم» من القائمة." />} />
         </Route>
       </Routes>

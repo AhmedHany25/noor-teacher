@@ -85,3 +85,34 @@ describe('morning summary', () => {
     expect(r.body).toBe('يوسف ٩:٠٠ ص، عمر ٥:٠٠ م')
   })
 })
+
+describe('student reminder nudge', () => {
+  const academies = [{ id: 'a1', name: 'الفرقان', currency: 'ريال', payMode: 'session' as const, rate: 40, archived: false, remindHours: 4 }]
+  const withAcademy = [{ ...yusuf, academyId: 'a1' }, omar]
+  const at = (nowTime: string, marked: string[] = [], sent: string[] = []) =>
+    dueReminders({
+      today: FRI,
+      nowTime,
+      groups,
+      students: withAcademy,
+      sessions: [],
+      settings: { ...DEFAULT_NOTIFY, beforeOn: false, eodOn: false },
+      sent: new Set(sent),
+      academies,
+      marked: new Set(marked),
+    })
+
+  it('tells the teacher to remind the student when the time comes', () => {
+    // Yusuf's lesson is at 9 am with a 4-hour reminder: due at 5 am.
+    expect(at('04:59')).toEqual([])
+    expect(at('05:10')).toEqual([
+      { key: 'student:g1:2026-11-27:09:00:s1', title: 'ذكّر يوسف بحصة الساعة ٩:٠٠ ص', body: 'افتح التطبيق وابعت التذكير لولي الأمر على واتساب بضغطة.', url: '/' },
+    ])
+  })
+
+  it('stays quiet once sent, once already reminded from the app, or after the lesson started', () => {
+    expect(at('05:10', [], ['student:g1:2026-11-27:09:00:s1'])).toEqual([])
+    expect(at('05:10', ['g1:2026-11-27:09:00:s1'])).toEqual([])
+    expect(at('09:05')).toEqual([])
+  })
+})

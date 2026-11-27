@@ -5,13 +5,16 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
+  query,
+  where,
   setDoc,
   updateDoc,
   writeBatch,
   type DocumentData,
   type Firestore,
 } from 'firebase/firestore'
-import type { CollectionRepo, Profile, Repos } from './repos'
+import type { CollectionRepo, NotificationEntry, Profile, Repos } from './repos'
 
 /** Firestore rejects `undefined`: on create drop such keys, on update delete the stored field. */
 const forCreate = (input: object): DocumentData =>
@@ -64,6 +67,15 @@ export function firestoreRepos(db: Firestore, uid: string, onWriteError: (e: Err
     sessions: repo(db, [...base, 'sessions'], onWriteError),
     payments: repo(db, [...base, 'payments'], onWriteError),
     devices: repo(db, [...base, 'devices'], onWriteError),
+    reminderMarks: repo(db, [...base, 'studentReminders'], onWriteError),
+    notifications: {
+      subscribe: (cb, onError) =>
+        onSnapshot(
+          query(collection(db, ...base, 'notifyLog'), where('at', '>=', Date.now() - 30 * 86_400_000), orderBy('at', 'desc')),
+          (snap) => cb(snap.docs.map((d) => ({ ...(d.data() as Omit<NotificationEntry, 'id'>), id: d.id }))),
+          onError,
+        ),
+    },
     profile: {
       subscribe: (cb, onError) => onSnapshot(doc(db, ...base), (snap) => cb((snap.data() as Profile | undefined) ?? {}), onError),
       patch: (fields) => {
