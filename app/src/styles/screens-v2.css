@@ -1345,3 +1345,230 @@
   width: 3.6rem;
   text-align: end;
 }
+
+/* ----- Mushaf ----- */
+.mushaf-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.mushaf-bar select { flex: 1; min-width: 0; }
+.mushaf-size { display: inline-flex; gap: 0.25rem; margin-inline-start: auto; }
+
+.mushaf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+}
+
+.mushaf-legend span { padding: 0 0.4rem; border-radius: 6px; }
+
+.mushaf {
+  padding: 1.25rem 1rem 1.5rem;
+  font-family: 'Amiri Quran', 'Amiri', serif;
+  line-height: 2.3;
+  color: var(--ink);
+}
+
+.mushaf-title {
+  margin: 0 0 0.25rem;
+  padding: 0.2rem 0;
+  border: 2px solid var(--gold);
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.8em;
+  color: var(--gold-ink);
+  background: var(--gold-soft);
+}
+
+.mushaf-basmala { margin: 0.25rem 0 0.5rem; text-align: center; }
+
+.mushaf-text {
+  margin: 0;
+  text-align: justify;
+  text-align-last: center;
+}
+
+.ayah.in-range { background: color-mix(in srgb, var(--emerald) 9%, transparent); border-radius: 6px; }
+
+.qw {
+  font: inherit;
+  color: inherit;
+  padding: 0 0.05em;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+}
+
+button.qw:hover { background: var(--emerald-soft); }
+
+.w-c1 { background: color-mix(in srgb, var(--gold) 22%, transparent); }
+.w-c3 { background: color-mix(in srgb, #d64541 26%, transparent); }
+.qw.is-marked,
+.mushaf-legend .is-marked {
+  background: #d64541;
+  color: #fff;
+}
+
+.q-mark { color: var(--emerald); font-size: 0.8em; }
+
+.ayah-no {
+  color: var(--emerald);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.ayah-no.has-old { color: #c0392b; }
+
+.mushaf-loading,
+.mushaf-source {
+  margin: 0.75rem 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.mushaf-sheet {
+  position: fixed;
+  inset-inline: 0.75rem;
+  bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  z-index: 40;
+  max-width: 28rem;
+  margin: 0 auto;
+  padding: 0.9rem 1rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.mushaf-sheet-word {
+  margin: 0;
+  font-family: 'Amiri Quran', 'Amiri', serif;
+  font-size: 1.8rem;
+  line-height: 1.8;
+}
+
+.mushaf-sheet-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0.6rem 0 0.4rem;
+}
+
+.mistake-word { font-family: 'Amiri Quran', 'Amiri', serif; }
+
+.mushaf-open {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
+}
+
+/* ----- Students' games ----- */
+.play-body {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 0 0 2rem;
+}
+
+.play-from { text-align: center; color: var(--ink-muted); font-size: var(--step--1); }
+
+.play-menu { display: grid; gap: 0.75rem; }
+
+.play-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1.1rem 1.2rem;
+  text-align: start;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.play-card b { font-size: 1.2rem; color: var(--emerald-strong); }
+.play-card span { color: var(--ink-muted); font-size: var(--step--1); }
+
+.play-game,
+.play-result { padding: 1rem 1.1rem 1.2rem; }
+
+.play-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.play-ask { margin: 1rem 0 0.25rem; font-weight: 700; }
+
+.play-prompt {
+  margin: 0 0 1rem;
+  font-family: 'Amiri Quran', 'Amiri', serif;
+  font-size: 1.7rem;
+  line-height: 2.1;
+}
+
+.play-line {
+  min-height: 4.2rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+
+.play-options { display: grid; gap: 0.5rem; }
+
+.play-option,
+.play-chip {
+  font-family: 'Amiri Quran', 'Amiri', serif;
+  font-size: 1.35rem;
+  line-height: 1.9;
+  padding: 0.4rem 0.8rem;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.play-option { text-align: start; }
+.play-option.is-right { border-color: var(--emerald); background: var(--emerald-soft); }
+.play-option.is-wrong { border-color: #d64541; background: color-mix(in srgb, #d64541 14%, var(--surface)); }
+.play-option:disabled { opacity: 0.5; }
+
+.play-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+
+.play-chip.is-shake {
+  border-color: #d64541;
+  animation: play-shake 0.3s;
+}
+
+@keyframes play-shake {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-chip.is-shake { animation: none; }
+}
+
+.play-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.play-result { text-align: center; }
+
+.play-stars { margin: 0; font-size: 3rem; color: var(--gold-bright); letter-spacing: 0.2em; }
+.play-stars span { color: var(--line); }
+.play-score { margin: 0.25rem 0 1rem; font-weight: 700; }
+
+.play-again { display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.75rem; }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router'
 import { useData } from '../data/data'
 import type { Session } from '../domain/attendance'
 import {
@@ -16,7 +17,9 @@ import {
 } from '../domain/notes'
 import { ayahCount, surahName, validRange, type Position, type Range } from '../domain/quran'
 import { SURAHS } from '../domain/surahs'
+import { ayahWords } from '../domain/mushaf'
 import { longDate, toArabicDigits } from '../lib/format'
+import { useQuran } from '../lib/quranText'
 
 type RangeDraft = { fs: string; fa: string; ts: string; ta: string; cross: boolean }
 
@@ -158,6 +161,8 @@ export function LessonNotes({ session, student, sessions }: { session: Session; 
         </button>
       )}
 
+      <MushafLink session={session} studentId={student.id} draft={mem.fs ? mem : rev ?? mem} />
+
       <MistakesField
         mistakes={mistakes}
         onChange={setMistakes}
@@ -202,6 +207,21 @@ export function LessonNotes({ session, student, sessions }: { session: Session; 
   )
 }
 
+/** Opens the mushaf on this lesson's passage, where tapping a word records a mistake. */
+function MushafLink({ session, studentId, draft }: { session: Session; studentId: string; draft: RangeDraft }) {
+  const q = new URLSearchParams({ session: session.id, student: studentId, s: draft.fs || '1' })
+  if (draft.fa) q.set('a', draft.fa)
+  if (draft.ta && (!draft.cross || draft.ts === draft.fs)) q.set('to', draft.ta)
+  return (
+    <p className="mushaf-open">
+      <Link to={`/mushaf?${q}`} className="btn btn-quiet">
+        افتح المصحف وسجّل الأخطاء على الكلمات
+      </Link>
+      <span className="field-hint">احفظ الملاحظات الأول لو كتبت حاجة جديدة.</span>
+    </p>
+  )
+}
+
 function MistakesField({
   mistakes,
   onChange,
@@ -217,6 +237,7 @@ function MistakesField({
   const [ayah, setAyah] = useState('')
   const [type, setType] = useState<MistakeType>('hifz')
   const [error, setError] = useState('')
+  const { quran } = useQuran()
   const s = Number(surah || defaultSurah)
 
   function add() {
@@ -240,6 +261,7 @@ function MistakesField({
               <li key={i} className="mistake">
                 <span>
                   {surahName(m.s)} {toArabicDigits(m.a)}
+                  {m.w !== undefined && quran && <span className="mistake-word"> «{ayahWords(quran, m.s, m.a)[m.w]?.text}»</span>}
                 </span>
                 <span className="mistake-type">{MISTAKE_TEXT[m.type]}</span>
                 {repeated(m) && <span className="tag tag-warn">متكررة</span>}

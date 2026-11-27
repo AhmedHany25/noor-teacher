@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Route, Routes } from 'react-router'
+import { Route, Routes, useLocation } from 'react-router'
 import { useAuth } from './auth/auth'
 import { AppShell } from './components/AppShell'
 import { DataProvider } from './data/DataProvider'
@@ -14,8 +14,10 @@ import { AttendanceScreen } from './screens/lessons/AttendanceScreen'
 import { LessonScreen } from './screens/lessons/LessonScreen'
 import { ReviewScreen } from './screens/lessons/ReviewScreen'
 import { MoreScreen } from './screens/MoreScreen'
+import { MushafScreen } from './screens/mushaf/MushafScreen'
 import { NotificationsScreen } from './screens/NotificationsScreen'
 import { PlannedScreen } from './screens/PlannedScreen'
+import { PlayScreen } from './screens/play/PlayScreen'
 import { SettingsScreen } from './screens/settings/SettingsScreen'
 import { SignInScreen } from './screens/SignInScreen'
 import { AcademyStatements } from './screens/reports/AcademyStatements'
@@ -38,6 +40,10 @@ type AppProps = {
 export function App({ makeRepos, now, timeZone }: AppProps) {
   const auth = useAuth()
   const clock = useMemo(() => ({ fixed: now, timeZone: timeZone ?? TEACHER_TZ }), [now, timeZone])
+  const { pathname } = useLocation()
+
+  // The students' games are public: no sign-in, nothing read from the teacher's data.
+  if (pathname === '/play') return <PlayScreen />
 
   if (auth.status === 'loading') {
     return (
@@ -85,6 +91,7 @@ function SignedInApp({ uid, makeRepos }: { uid: string; makeRepos: (uid: string)
           <Route path="payments/new" element={<PaymentFormScreen />} />
           <Route path="settings" element={<SettingsScreen />} />
           <Route path="more" element={<MoreScreen />} />
+          <Route path="mushaf" element={<MushafScreen />} />
           <Route path="notifications" element={<NotificationsScreen />} />
           <Route path="*" element={<PlannedScreen title="الصفحة غير موجودة" what="ارجع إلى «اليوم» من القائمة." />} />
         </Route>

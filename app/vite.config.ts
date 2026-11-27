@@ -17,7 +17,9 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.ts',
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // quran.txt (the mushaf text, ~1.4 MB) is precached so the mushaf and games work offline.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,txt}'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
       includeAssets: ['favicon.ico', 'icon.svg', 'apple-touch-icon-180x180.png'],
       manifest: {

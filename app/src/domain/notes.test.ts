@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Session } from './attendance'
-import { previousHomework, suggestedStart, type LessonNote } from './notes'
+import { previousHomework, suggestedStart, toggleWordMistake, wordMistakeCounts, type LessonNote } from './notes'
 
 const ses = (date: string, note: LessonNote, sid = 's1'): Session => ({
   id: `g_${date}`,
@@ -51,5 +51,25 @@ describe('previousHomework', () => {
     expect(previousHomework(history, 's1', '2026-11-13')).toEqual({ date: '2026-11-06', text: 'حفظ النبأ ١–١٠' })
     expect(previousHomework(history, 's1', '2026-11-20')).toEqual({ date: '2026-11-13', text: 'مراجعة النبأ' })
     expect(previousHomework(history, 's1', '2026-11-06')).toBeUndefined()
+  })
+})
+
+describe('word mistakes', () => {
+  it('counts lessons with a mistake on each word, optionally skipping the current lesson', () => {
+    const list = [
+      ses('2026-11-01', { mistakes: [{ s: 78, a: 5, w: 2, type: 'hifz' }, { s: 78, a: 6, type: 'hifz' }] }),
+      ses('2026-11-08', { mistakes: [{ s: 78, a: 5, w: 2, type: 'tajweed' }] }),
+    ]
+    expect(wordMistakeCounts(list, 's1').get('78:5:2')).toBe(2)
+    expect(wordMistakeCounts(list, 's1', 'g_2026-11-08').get('78:5:2')).toBe(1)
+    expect(wordMistakeCounts(list, 's1').size).toBe(1)
+  })
+
+  it('toggles a word: same type removes it, another type replaces it', () => {
+    const m = { s: 78, a: 5, w: 2, type: 'hifz' as const }
+    const one = toggleWordMistake([], m)
+    expect(one).toEqual([m])
+    expect(toggleWordMistake(one, { ...m, type: 'tajweed' })).toEqual([{ ...m, type: 'tajweed' }])
+    expect(toggleWordMistake(one, m)).toEqual([])
   })
 })

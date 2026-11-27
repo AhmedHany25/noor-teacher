@@ -3,6 +3,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { useAcademies, useGroups, useSessions, useStudents } from '../../data/data'
 import { STATUS_TEXT } from '../../domain/attendance'
 import { DEFAULT_TIME_ZONE } from '../../domain/countries'
+import { encodePlan, planFor } from '../../domain/games'
 import { RATING_TEXT, previousHomework } from '../../domain/notes'
 import { studentProgress } from '../../domain/progress'
 import { rangeText, surahName } from '../../domain/quran'
@@ -87,6 +88,12 @@ export function StudentProfileScreen() {
         <Link className="btn btn-quiet" to="/reports/parents">
           التقرير الشهري
         </Link>
+        <Link
+          className="btn btn-quiet"
+          to={`/mushaf?student=${s.id}&s=${p.lastPosition?.s ?? 1}${p.lastPosition ? `&a=${p.lastPosition.a}` : ''}`}
+        >
+          المصحف بأخطائه
+        </Link>
         <Link className="btn btn-quiet" to={`/groups/new?student=${s.id}`}>
           حلقة جديدة
         </Link>
@@ -102,13 +109,17 @@ export function StudentProfileScreen() {
         </section>
       )}
 
+      <GamesCard name={s.name} plan={planFor(s.name, sessions, s.id)} phone={wa} />
+
       {p.repeated.length > 0 && (
         <section className="lesson-section card" aria-label="مواضع تحتاج مراجعة">
           <h2 className="lesson-section-title">مواضع تحتاج مراجعة</h2>
           <ul className="mistake-list">
             {p.repeated.map((m) => (
               <li key={`${m.s}:${m.a}`} className="mistake">
-                {surahName(m.s)} {toArabicDigits(m.a)}
+                <Link to={`/mushaf?student=${s.id}&s=${m.s}&a=${m.a}`}>
+                  {surahName(m.s)} {toArabicDigits(m.a)}
+                </Link>
                 <span className="tag tag-warn">{toArabicDigits(m.count)} مرات</span>
               </li>
             ))}
@@ -157,5 +168,30 @@ export function StudentProfileScreen() {
         )}
       </section>
     </>
+  )
+}
+
+/** Send the student a link to two games built from their latest passages and mistakes. */
+function GamesCard({ name, plan, phone }: { name: string; plan: ReturnType<typeof planFor>; phone: string | null }) {
+  if (!plan) return null
+  const link = `${window.location.origin}/play#${encodePlan(plan)}`
+  const message = `السلام عليكم، دي ألعاب على حفظ ${plan.n} (كمّل الآية ورتّب الكلمات). يلعبها من اللينك ده ويبعتلي النتيجة:
+${link}`
+  return (
+    <section className="lesson-section card" aria-label="ألعاب للطالب">
+      <h2 className="lesson-section-title">ألعاب لـ{name}</h2>
+      <p className="field-hint">
+        من {plan.p.map(([su, f, t]) => `${surahName(su)} ${toArabicDigits(f)}–${toArabicDigits(t)}`).join('، ')}
+        {plan.m.length > 0 && `، والآيات اللي بيغلط فيها بتتكرر أكتر`}.
+      </p>
+      <div className="profile-actions">
+        <a className="btn btn-primary btn-wa" href={`https://wa.me/${phone ?? ''}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">
+          ابعت اللعبة واتساب
+        </a>
+        <a className="btn btn-quiet" href={link} target="_blank" rel="noreferrer">
+          جرّبها هنا
+        </a>
+      </div>
+    </section>
   )
 }

@@ -5,8 +5,8 @@ export type Rating = 'excellent' | 'very_good' | 'good' | 'needs_review'
 export type HomeworkStatus = 'done' | 'partial' | 'no'
 export type MistakeType = 'hifz' | 'tajweed' | 'pronunciation'
 
-/** A place in the Quran the student got wrong in this lesson. */
-export type Mistake = { s: number; a: number; type: MistakeType; note?: string }
+/** A place in the Quran the student got wrong in this lesson; `w` = word index in the ayah (from the mushaf). */
+export type Mistake = { s: number; a: number; w?: number; type: MistakeType; note?: string }
 
 /** What the teacher writes about one student in one lesson. Every field is optional. */
 export type LessonNote = {
@@ -67,6 +67,28 @@ export function mistakeCounts(sessions: Session[], studentId: string): Map<strin
     }
   }
   return m
+}
+
+/** How many lessons had a mistake on each word, for this student. Key: "s:a:w". Optionally skip one session. */
+export function wordMistakeCounts(sessions: Session[], studentId: string, skipSessionId?: string): Map<string, number> {
+  const m = new Map<string, number>()
+  for (const s of sessions) {
+    if (s.id === skipSessionId) continue
+    for (const x of s.notes?.[studentId]?.mistakes ?? []) {
+      if (x.w === undefined) continue
+      const k = `${x.s}:${x.a}:${x.w}`
+      m.set(k, (m.get(k) ?? 0) + 1)
+    }
+  }
+  return m
+}
+
+/** Toggle a word mistake in a lesson's list: same word and type removes it, another type replaces it. */
+export function toggleWordMistake(list: Mistake[], m: Required<Pick<Mistake, 's' | 'a' | 'w' | 'type'>>): Mistake[] {
+  const same = (x: Mistake) => x.s === m.s && x.a === m.a && x.w === m.w
+  const existing = list.find(same)
+  const rest = list.filter((x) => !same(x))
+  return existing?.type === m.type ? rest : [...rest, m]
 }
 
 /** Ayahs with mistakes in two or more lessons, most frequent first. */
