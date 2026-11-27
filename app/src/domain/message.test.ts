@@ -4,6 +4,17 @@ import { parentMessage } from './message'
 import { repeatedMistakes } from './notes'
 
 describe('parentMessage', () => {
+  it('names the marked word when it is known', () => {
+    const text = parentMessage({
+      name: 'يوسف',
+      dateText: 'اليوم',
+      status: 'p',
+      note: { mistakes: [{ s: 78, a: 1, w: 1, type: 'hifz' }, { s: 78, a: 3, type: 'tajweed' }] },
+      wordOf: (s, a, w) => (s === 78 && a === 1 && w === 1 ? 'يَتَسَآءَلُونَ' : undefined),
+    })
+    expect(text).toContain('⚠️ مواضع تحتاج تركيز: النبأ ١: «يَتَسَآءَلُونَ» (حفظ)، النبأ ٣ (تجويد)')
+  })
+
   it('summarises a lesson the student attended', () => {
     const text = parentMessage({
       name: 'يوسف',

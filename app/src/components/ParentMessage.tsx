@@ -3,8 +3,10 @@ import { useData } from '../data/data'
 import type { Session } from '../domain/attendance'
 import { DEFAULT_TIME_ZONE } from '../domain/countries'
 import { parentMessage } from '../domain/message'
+import { ayahWords } from '../domain/mushaf'
 import { whatsappNumber, type Student } from '../domain/student'
 import { longDate, toArabicDigits } from '../lib/format'
+import { useQuran } from '../lib/quranText'
 
 const sentAt = new Intl.DateTimeFormat('ar-EG', { hour: 'numeric', minute: '2-digit', timeZone: 'Africa/Cairo' })
 
@@ -12,7 +14,14 @@ const sentAt = new Intl.DateTimeFormat('ar-EG', { hour: 'numeric', minute: '2-di
 export function ParentMessage({ session, student }: { session: Session; student: Pick<Student, 'id' | 'name' | 'guardianPhone' | 'timeZone'> }) {
   const { repos } = useData()
   const status = session.attendance[student.id]?.status ?? 'p'
-  const generated = parentMessage({ name: student.name, dateText: longDate(session.date), status, note: session.notes?.[student.id] })
+  const { quran } = useQuran()
+  const generated = parentMessage({
+    name: student.name,
+    dateText: longDate(session.date),
+    status,
+    note: session.notes?.[student.id],
+    wordOf: quran ? (s, a, w) => ayahWords(quran, s, a)[w]?.text : undefined,
+  })
   // Follow the saved notes until the teacher edits the text by hand.
   const [custom, setCustom] = useState<string | null>(null)
   const text = custom ?? generated
