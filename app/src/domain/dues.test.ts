@@ -101,6 +101,19 @@ describe('monthDues', () => {
     expect(d).toEqual([])
   })
 
+  it('pays a trial lesson only when it was agreed to count', () => {
+    const input = (paid: boolean) => ({
+      students: [stu('s1')],
+      academies: [furqan],
+      groups: [{ ...group('t1', ['s1']), slots: [], trial: { paid } }],
+      sessions: [ses('t1', '2026-11-07', { s1: P }, { kind: 'trial' })],
+      month: '2026-11',
+      baseCurrency: 'جنيه',
+    })
+    expect(monthDues(input(false))).toEqual([])
+    expect(monthDues(input(true))[0].total).toBe(40)
+  })
+
   it('uses a student special rate over the academy rate, and pays each student of a group', () => {
     const d = monthDues({
       students: [stu('s1', { rate: 50 }), stu('s2')],

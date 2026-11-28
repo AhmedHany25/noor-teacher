@@ -10,6 +10,7 @@ import { AcademyFormScreen } from './screens/academies/AcademyFormScreen'
 import { PaymentFormScreen } from './screens/academies/PaymentFormScreen'
 import { GroupFormScreen } from './screens/groups/GroupFormScreen'
 import { GroupsScreen } from './screens/groups/GroupsScreen'
+import { TrialFormScreen } from './screens/groups/TrialFormScreen'
 import { AttendanceScreen } from './screens/lessons/AttendanceScreen'
 import { LessonScreen } from './screens/lessons/LessonScreen'
 import { ReviewScreen } from './screens/lessons/ReviewScreen'
@@ -82,6 +83,7 @@ function SignedInApp({ uid, makeRepos }: { uid: string; makeRepos: (uid: string)
           <Route path="groups" element={<GroupsScreen />} />
           <Route path="groups/new" element={<GroupFormScreen />} />
           <Route path="groups/:id" element={<GroupFormScreen />} />
+          <Route path="trial/new" element={<TrialFormScreen />} />
           <Route path="lessons/:groupId/:date" element={<LessonScreen />} />
           <Route path="review" element={<ReviewScreen />} />
           <Route path="attendance" element={<AttendanceScreen />} />

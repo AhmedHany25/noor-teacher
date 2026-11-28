@@ -67,7 +67,9 @@ function billable(student: Student, sessions: Session[], groups: Group[], from?:
   const o = student.openingLessons
   if (o && o.count > 0 && (!from || o.date >= from)) out.push({ date: o.date, lessons: o.count, minutes: o.minutes })
   for (const s of sessions) {
-    if (s.kind !== 'regular' || !s.attendance[student.id]?.billable) continue
+    if (!s.attendance[student.id]?.billable) continue
+    // Regular lessons count; a trial only when it was agreed to be paid.
+    if (s.kind !== 'regular' && !(s.kind === 'trial' && groups.find((g) => g.id === s.groupId)?.trial?.paid)) continue
     if (from && s.date < from) continue
     const minutes = s.actualDurationMin ?? groups.find((g) => g.id === s.groupId)?.durationMin ?? 0
     out.push({ date: s.date, lessons: 1, minutes })

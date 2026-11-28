@@ -39,7 +39,7 @@ export function StudentProfileScreen() {
   const p = studentProgress(sessions, s.id, today.slice(0, 7))
   const homework = previousHomework(sessions, s.id, '9999-12-31')
   const payer = s.academyId ? (academies.find((a) => a.id === s.academyId)?.name ?? 'أكاديمية') : 'خصوصي'
-  const myGroups = groups.filter((g) => !g.archived && g.studentIds.includes(s.id))
+  const myGroups = groups.filter((g) => !g.archived && !g.trial && g.studentIds.includes(s.id))
   const wa = s.guardianPhone ? whatsappNumber(s.guardianPhone, s.timeZone, DEFAULT_TIME_ZONE) : null
 
   return (

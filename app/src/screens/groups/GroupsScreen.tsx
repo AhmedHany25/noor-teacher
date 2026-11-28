@@ -23,7 +23,7 @@ export function GroupsScreen() {
 
   const today = weekdayOf(todayDate)
   const active = groups
-    .filter((g) => !g.archived)
+    .filter((g) => !g.archived && !g.trial)
     .map((g) => ({ g, title: groupTitle(g, students) }))
     .sort((a, b) => a.title.localeCompare(b.title, 'ar'))
   const ended = groups.filter((g) => g.archived).length

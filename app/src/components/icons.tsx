@@ -120,3 +120,12 @@ export function BookIcon() {
     </svg>
   )
 }
+
+export function TrialIcon() {
+  return (
+    <svg {...base}>
+      <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" />
+      <path d="M3.5 9.5h17M8 2.5v4M16 2.5v4M12 12.5v5M9.5 15h5" />
+    </svg>
+  )
+}

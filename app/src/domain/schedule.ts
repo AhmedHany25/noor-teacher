@@ -20,6 +20,8 @@ export type Group = {
   pausedMonths: string[] // "YYYY-MM"
   exceptions: Record<string, GroupException> // keyed by "YYYY-MM-DD"
   archived: boolean
+  /** A one-off trial lesson (no weekly days); `paid` = it counts in the dues. */
+  trial?: { paid: boolean }
 }
 
 export type GroupInput = Omit<Group, 'id'>
