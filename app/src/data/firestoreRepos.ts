@@ -68,6 +68,7 @@ export function firestoreRepos(db: Firestore, uid: string, onWriteError: (e: Err
     payments: repo(db, [...base, 'payments'], onWriteError),
     devices: repo(db, [...base, 'devices'], onWriteError),
     reminderMarks: repo(db, [...base, 'studentReminders'], onWriteError),
+    gameContent: repo(db, [...base, 'gameContent'], onWriteError),
     notifications: {
       subscribe: (cb, onError) =>
         onSnapshot(

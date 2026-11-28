@@ -8,6 +8,19 @@ export type MistakeType = 'hifz' | 'tajweed' | 'pronunciation'
 /** A place in the Quran the student got wrong in this lesson; `w` = word index in the ayah (from the mushaf). */
 export type Mistake = { s: number; a: number; w?: number; type: MistakeType; note?: string }
 
+/** One game played in the lesson: answers judged right, right with help, and wrong. */
+export type GameResult = {
+  game: string
+  title: string
+  at: number
+  ok: number
+  help: number
+  bad: number
+  surahs: number[]
+  /** Places to review (missed or helped), e.g. «النبأ ٥». */
+  review: string[]
+}
+
 /** What the teacher writes about one student in one lesson. Every field is optional. */
 export type LessonNote = {
   memorized?: Range
@@ -19,6 +32,7 @@ export type LessonNote = {
   /** How the previous homework went, checked in this lesson. */
   homeworkStatus?: HomeworkStatus
   mistakes?: Mistake[]
+  games?: GameResult[]
 }
 
 export const RATING_TEXT: Record<Rating, string> = {

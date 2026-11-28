@@ -125,6 +125,9 @@ export function LessonNotes({ session, student, sessions }: { session: Session; 
     if (homework.trim()) next.homework = homework.trim()
     if (prevHw && hwStatus) next.homeworkStatus = hwStatus
     if (mistakes.length) next.mistakes = mistakes
+    // Games played in the lesson are saved from the games screen; keep them.
+    const games = session.notes?.[student.id]?.games
+    if (games?.length) next.games = games
     setError('')
     repos.sessions.patch(session.id, { notes: { ...session.notes, [student.id]: next } })
     notify('تم حفظ الملاحظات')

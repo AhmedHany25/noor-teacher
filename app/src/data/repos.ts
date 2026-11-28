@@ -1,6 +1,7 @@
 import type { Academy, AcademyInput } from '../domain/academy'
 import type { Session, SessionInput } from '../domain/attendance'
 import type { Payment, PaymentInput } from '../domain/dues'
+import type { GameContent, GameContentInput } from '../domain/gameContent'
 import type { BackupData } from '../domain/importData'
 import type { NotifySettings } from '../domain/reminders'
 import type { Group, GroupInput } from '../domain/schedule'
@@ -33,6 +34,8 @@ export type Profile = {
   workHours?: { from: string; to: string }
   /** The teacher asked for a test notification at this time (ms); the sender delivers it and clears it. */
   testPushAt?: number
+  /** The ready-made games content was loaded once (so deleted items do not come back). */
+  gameSeeded?: boolean
 }
 
 /** When a student reminder was sent, users/{uid}/studentReminders/{key}. */
@@ -57,6 +60,7 @@ export type Repos = {
   payments: CollectionRepo<Payment, PaymentInput>
   devices: CollectionRepo<Device, Omit<Device, 'id'>>
   reminderMarks: CollectionRepo<ReminderMark, Omit<ReminderMark, 'id'>>
+  gameContent: CollectionRepo<GameContent, GameContentInput>
   profile: ProfileRepo
   /** Delivered reminders of the last 30 days, newest first. */
   notifications: { subscribe: (cb: (list: NotificationEntry[]) => void, onError: (e: Error) => void) => Unsubscribe }

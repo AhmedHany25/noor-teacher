@@ -1,3 +1,4 @@
+import type { GameContent } from '../domain/gameContent'
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { Academy } from '../domain/academy'
 import type { Session } from '../domain/attendance'
@@ -54,6 +55,7 @@ export const useSessions = (): Live<Session> => useLive(useData().repos.sessions
 export const usePayments = (): Live<Payment> => useLive(useData().repos.payments)
 export const useDevices = (): Live<Device> => useLive(useData().repos.devices)
 export const useReminderMarks = (): Live<ReminderMark> => useLive(useData().repos.reminderMarks)
+export const useGameContent = (): Live<GameContent> => useLive(useData().repos.gameContent)
 
 /** Delivered reminders (last 30 days, newest first). */
 export function useNotifications(): { items: NotificationEntry[]; loading: boolean } {

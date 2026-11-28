@@ -3,12 +3,12 @@ import { useEffect, useMemo, useRef, useState, type TouchEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { PageHeader } from '../../components/PageHeader'
 import { useData, useGroups, useSessions, useStudents } from '../../data/data'
-import { quickRecord, sessionId, type Session } from '../../domain/attendance'
+import type { Session } from '../../domain/attendance'
+import { findLessonTarget, noteWrite } from '../../domain/lessonTarget'
 import { basmala, hasBasmalaHeading, type QuranText } from '../../domain/mushaf'
 import { JUZ_STARTS, SURAH_PAGE, juzOf, letterBudget, pageStarts, surahUnits, type Unit } from '../../domain/mushafPages'
 import { MISTAKE_TEXT, mistakeCounts, toggleWordMistake, wordMistakeCounts, type Mistake, type MistakeType } from '../../domain/notes'
 import { surahName } from '../../domain/quran'
-import { occurrencesOn } from '../../domain/schedule'
 import { SURAHS } from '../../domain/surahs'
 import { useClock } from '../../lib/clock'
 import { longDate, toArabicDigits } from '../../lib/format'
@@ -84,23 +84,11 @@ export function MushafScreen() {
   const studentId = params.get('student') ?? ''
   const student = students.find((x) => x.id === studentId)
 
-  // Where mistakes go, so marking works the moment a student is chosen:
-  // the lesson in the link → the student's lesson today (recorded or not) → their last lesson.
-  const target = useMemo(() => {
-    if (!student) return undefined
-    const inGroup = (groupId: string) => groups.find((g) => g.id === groupId)?.studentIds.includes(student.id)
-    const linked = sessions.find((x) => x.id === params.get('session'))
-    if (linked && (linked.attendance[student.id] || inGroup(linked.groupId))) return { session: linked, today: linked.date === today }
-    const occ = occurrencesOn(groups, today).find((o) => !o.cancelledBy && inGroup(o.groupId))
-    if (occ) {
-      const existing = sessions.find((x) => x.id === sessionId(occ.groupId, occ.date))
-      return { session: existing, occ, today: true }
-    }
-    const last = sessions
-      .filter((x) => x.attendance[student.id]?.status === 'p' && x.date <= today)
-      .sort((x, y) => y.date.localeCompare(x.date))[0]
-    return last ? { session: last, today: false } : undefined
-  }, [student, groups, sessions, params, today])
+  // Where mistakes go, so marking works the moment a student is chosen.
+  const target = useMemo(
+    () => (student ? findLessonTarget({ studentId: student.id, groups, sessions, today, linkedSessionId: params.get('session'), allowPast: true }) : undefined),
+    [student, groups, sessions, params, today],
+  )
   const session: Session | undefined = target?.session
   const marking = !!target
 
@@ -130,22 +118,11 @@ export function MushafScreen() {
     if (!student || !target) return
     const list = toggleWordMistake(lessonMistakes, { s, a, w, type: prefs.brush })
     const { mistakes: _old, ...rest } = session?.notes?.[student.id] ?? {}
-    const notes = { ...session?.notes, [student.id]: list.length ? { ...rest, mistakes: list } : rest }
-    const present = { status: 'p' as const, billable: true }
-    if (session) {
-      // A student reading in the lesson is there: record them present if not yet.
-      const attendance = session.attendance[student.id] ? session.attendance : { ...session.attendance, [student.id]: present }
-      repos.sessions.patch(session.id, attendance === session.attendance ? { notes } : { notes, attendance })
-      if (attendance !== session.attendance) notify(`اتسجل حضور ${student.name}`)
-    } else if (target.occ) {
-      const g = groups.find((x) => x.id === target.occ.groupId)!
-      repos.sessions.put(sessionId(target.occ.groupId, target.occ.date), {
-        ...quickRecord(target.occ, g, 'p', undefined, Date.now()),
-        attendance: { [student.id]: present },
-        notes,
-      })
-      notify(`اتسجل حضور ${student.name} في حصة النهارده`)
-    }
+    const write = noteWrite(target, student.id, list.length ? { ...rest, mistakes: list } : rest, groups, Date.now())
+    if (!write) return
+    if (write.kind === 'patch') repos.sessions.patch(write.id, write.fields)
+    else repos.sessions.put(write.id, write.value)
+    if (write.recordedPresent) notify(`اتسجل حضور ${student.name}`)
   }
 
   const back = session ? `/lessons/${session.groupId}/${session.date}` : undefined

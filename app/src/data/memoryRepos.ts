@@ -1,3 +1,4 @@
+import type { GameContent, GameContentInput } from '../domain/gameContent'
 import type { Academy } from '../domain/academy'
 import type { Session } from '../domain/attendance'
 import type { Payment } from '../domain/dues'
@@ -65,7 +66,7 @@ function memRepo<T extends { id: string }, I extends object>(
 
 /** In-memory repos with the same contract as Firestore, for tests. */
 export function memoryRepos(
-  seed: { students?: Student[]; academies?: Academy[]; groups?: Group[]; sessions?: Session[]; payments?: Payment[]; profile?: Profile; notifications?: NotificationEntry[] } = {},
+  seed: { students?: Student[]; academies?: Academy[]; groups?: Group[]; sessions?: Session[]; payments?: Payment[]; gameContent?: GameContent[]; profile?: Profile; notifications?: NotificationEntry[] } = {},
 ) {
   let legacy: Record<string, unknown> = {}
   let profile: Profile = seed.profile ?? {}
@@ -78,6 +79,7 @@ export function memoryRepos(
     payments: memRepo<Payment, Omit<Payment, 'id'>>('p', seed.payments ?? []),
     devices: memRepo<Device, Omit<Device, 'id'>>('d', []),
     reminderMarks: memRepo<ReminderMark, Omit<ReminderMark, 'id'>>('r', []),
+    gameContent: memRepo<GameContent, GameContentInput>('c', seed.gameContent ?? []),
   }
   return {
     ...repos,

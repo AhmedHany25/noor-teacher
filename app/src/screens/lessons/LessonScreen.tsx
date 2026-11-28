@@ -164,9 +164,14 @@ function Lesson({
         }
         action={
           !lesson.cancelledBy && (
-            <Link to={`/mushaf?student=${people[0].id}${session ? `&session=${session.id}` : ''}`} className="btn btn-ghost-light">
-              المصحف
-            </Link>
+            <div className="band-actions">
+              <Link to={`/mushaf?student=${people[0].id}${session ? `&session=${session.id}` : ''}`} className="btn btn-ghost-light">
+                المصحف
+              </Link>
+              <Link to={`/games?student=${people[0].id}`} className="btn btn-ghost-light">
+                الألعاب
+              </Link>
+            </div>
           )
         }
       />

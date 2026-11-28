@@ -14,6 +14,9 @@ import { TrialFormScreen } from './screens/groups/TrialFormScreen'
 import { AttendanceScreen } from './screens/lessons/AttendanceScreen'
 import { LessonScreen } from './screens/lessons/LessonScreen'
 import { ReviewScreen } from './screens/lessons/ReviewScreen'
+import { GameContentScreen } from './screens/games/GameContentScreen'
+import { GamePlayScreen } from './screens/games/GamePlayScreen'
+import { GamesScreen } from './screens/games/GamesScreen'
 import { MoreScreen } from './screens/MoreScreen'
 import { MushafScreen } from './screens/mushaf/MushafScreen'
 import { NotificationsScreen } from './screens/NotificationsScreen'
@@ -94,6 +97,9 @@ function SignedInApp({ uid, makeRepos }: { uid: string; makeRepos: (uid: string)
           <Route path="settings" element={<SettingsScreen />} />
           <Route path="more" element={<MoreScreen />} />
           <Route path="mushaf" element={<MushafScreen />} />
+          <Route path="games" element={<GamesScreen />} />
+          <Route path="games/content" element={<GameContentScreen />} />
+          <Route path="games/:game" element={<GamePlayScreen />} />
           <Route path="notifications" element={<NotificationsScreen />} />
           <Route path="*" element={<PlannedScreen title="الصفحة غير موجودة" what="ارجع إلى «اليوم» من القائمة." />} />
         </Route>

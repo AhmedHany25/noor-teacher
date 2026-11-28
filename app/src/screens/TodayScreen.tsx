@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { BookIcon, CashIcon, CircleIcon, ReportIcon, TrialIcon, WeekIcon } from '../components/icons'
+import { BookIcon, CashIcon, CircleIcon, GamesIcon, ReportIcon, TrialIcon, WeekIcon } from '../components/icons'
 import { PageHeader } from '../components/PageHeader'
 import { StudentRemindersCard } from '../components/StudentRemindersCard'
 import { useGroups, useSessions, useStudents } from '../data/data'
@@ -92,6 +92,10 @@ export function TodayScreen() {
         <Link to="/groups" className="shortcut">
           <span className="shortcut-icon"><CircleIcon /></span>
           الحلقات
+        </Link>
+        <Link to={next ? `/games?student=${groupOf(next).studentIds[0]}` : '/games'} className="shortcut" aria-label={next ? 'الألعاب لطالب الحصة الجاية' : 'الألعاب'}>
+          <span className="shortcut-icon"><GamesIcon /></span>
+          الألعاب
         </Link>
         <Link to="/trial/new" className="shortcut" aria-label="حصة تجريبية جديدة">
           <span className="shortcut-icon"><TrialIcon /></span>

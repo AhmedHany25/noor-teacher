@@ -1,0 +1,167 @@
+/* ----- Games section ----- */
+.games-setup { padding: 0.9rem 1rem; margin-bottom: 1rem; display: grid; gap: 0.6rem; }
+.games-setup .field { margin: 0; }
+.surah-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+.surah-chips select { flex: 1 1 8rem; min-width: 0; }
+.chip.is-on { background: var(--emerald); color: #fff; border-color: var(--emerald); }
+
+.segmented .segment-btn { flex: 1; }
+.segment-btn {
+  padding: 0.4rem 0.6rem;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.segment-btn:first-child { border-start-start-radius: 10px; border-end-start-radius: 10px; }
+.segment-btn:last-child { border-start-end-radius: 10px; border-end-end-radius: 10px; }
+.segment-btn.is-on { background: var(--emerald); border-color: var(--emerald); color: #fff; }
+
+.games-group { margin-bottom: 1.25rem; }
+.games-group .section-title .field-hint { font-weight: 400; margin-inline-start: 0.4rem; }
+.games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.6rem; }
+
+.game-tile {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  box-shadow: var(--shadow-card);
+}
+.game-tile:hover { border-color: var(--emerald); }
+.game-tile.is-off { opacity: 0.6; box-shadow: none; }
+.game-icon { font-size: 1.6rem; line-height: 1; }
+.game-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.game-text b { color: var(--emerald-strong); }
+.game-text span { font-size: 0.8rem; color: var(--ink-muted); }
+.game-text small { font-size: 0.72rem; color: var(--emerald); }
+.game-text small.is-missing { color: var(--gold-ink); }
+
+.game-card { padding: 1rem 1.1rem 1.2rem; text-align: center; }
+.game-progress { display: flex; align-items: center; gap: 0.6rem; font-size: 0.8rem; color: var(--ink-muted); }
+.game-ask { margin: 0.9rem 0 0.25rem; font-weight: 800; }
+.game-plain { margin: 0.25rem 0; font-size: 1.35rem; font-weight: 800; color: var(--emerald-strong); }
+.game-quran { margin: 0.4rem 0; font-family: 'Amiri Quran', 'Amiri', serif; font-size: 1.65rem; line-height: 2.2; }
+.game-answer { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 2px dashed var(--gold); }
+.game-answer .game-quran,
+.game-answer .game-plain { color: var(--emerald); }
+.game-reveal { margin-top: 0.6rem; }
+.game-where { margin: 0.5rem 0 0; }
+.game-options { display: grid; gap: 0.5rem; margin-top: 0.75rem; text-align: start; }
+.game-option {
+  padding: 0.5rem 0.8rem;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+.game-option.is-quran { font-family: 'Amiri Quran', 'Amiri', serif; font-weight: 400; font-size: 1.3rem; line-height: 1.9; }
+.game-option.is-right { border-color: var(--emerald); background: var(--emerald-soft); }
+.game-option.is-wrong { border-color: #d64541; background: color-mix(in srgb, #d64541 14%, var(--surface)); }
+.game-option:disabled { cursor: default; color: var(--ink); }
+
+.game-next { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-top: 0.9rem; }
+
+.judge-bar {
+  position: sticky;
+  bottom: calc(var(--tabbar-height, 4rem) + 0.5rem + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+  padding: 0.5rem;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.12);
+}
+@media (min-width: 900px) {
+  .judge-bar { bottom: 1rem; }
+}
+.judge { padding: 0.8rem 0.4rem; border: 0; border-radius: 12px; font: inherit; font-weight: 800; font-size: 1.05rem; color: #fff; cursor: pointer; }
+.judge-ok { background: #2f8f4e; }
+.judge-help { background: #e8961e; }
+.judge-bad { background: #d64541; }
+
+.celebrate { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; }
+.celebrate span {
+  position: absolute;
+  font-size: 2rem;
+  color: var(--gold-bright);
+  animation: burst 0.9s ease-out forwards;
+}
+@keyframes burst {
+  0% { opacity: 1; transform: rotate(calc(var(--i) * 30deg)) translateY(0) scale(0.6); }
+  100% { opacity: 0; transform: rotate(calc(var(--i) * 30deg)) translateY(-28vmin) scale(1.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .celebrate { display: none; }
+}
+
+.game-result { padding: 1rem 1.1rem 1.2rem; text-align: center; }
+.result-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 0.5rem 0 0.9rem; }
+.result-counts span { padding: 0.5rem; border-radius: 12px; background: var(--paper); font-weight: 700; }
+.result-counts b { display: block; font-size: 1.4rem; }
+.rc-ok b { color: #2f8f4e; }
+.rc-help b { color: #e8961e; }
+.rc-bad b { color: #d64541; }
+.result-review { text-align: start; margin-bottom: 0.6rem; }
+.result-review h3 { margin: 0 0 0.25rem; font-size: 0.95rem; }
+
+.pic-emoji { margin: 0.6rem 0 0.2rem; font-size: 4rem; line-height: 1.2; }
+.pic-hint { font-size: 1.05rem; }
+.situation-text { font-size: 1.1rem; color: var(--ink); }
+.situation-ayah { margin-top: 0.8rem; padding-top: 0.6rem; border-top: 2px dashed var(--gold); }
+.situation-tafsir { margin: 0.4rem 0 0; padding: 0.5rem 0.7rem; border-radius: 10px; background: var(--gold-soft); text-align: start; }
+
+.match-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.6rem; }
+.match-col { display: grid; gap: 0.5rem; align-content: start; }
+.match-word,
+.match-meaning {
+  padding: 0.5rem 0.6rem;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.match-word { font-family: 'Amiri Quran', 'Amiri', serif; font-size: 1.3rem; line-height: 1.8; }
+.match-meaning { font-weight: 700; font-size: 0.95rem; }
+.match-word.is-sel { border-color: var(--gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 35%, transparent); }
+.match-word.is-done,
+.match-meaning.is-done { border-color: var(--emerald); background: var(--emerald-soft); opacity: 0.75; }
+.match-meaning.is-wrong { border-color: #d64541; animation: play-shake 0.3s; }
+
+.erase-range { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; }
+.erase-stars { margin-inline-start: auto; font-weight: 800; color: var(--gold-ink); }
+.erase-text { text-align: justify; text-align-last: center; }
+.ew { font: inherit; color: inherit; background: none; border: 0; padding: 0 0.05em; border-radius: 6px; cursor: pointer; }
+.ew.is-hidden { color: transparent; background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.erase-dock { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; align-items: center; }
+.erase-dock .segmented { display: flex; }
+.erase-step { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 700; font-size: 0.85rem; }
+
+.content-bar { display: flex; gap: 0.5rem; align-items: center; padding: 0.5rem 0.6rem; margin-bottom: 0.75rem; }
+.content-bar select { flex: 1; min-width: 0; }
+.content-form { padding: 0.9rem 1rem; margin-bottom: 0.75rem; display: grid; gap: 0.5rem; }
+.content-form .field { margin: 0; }
+.content-list { list-style: none; margin: 0; padding: 0.25rem 0.9rem; }
+.content-list li { display: flex; gap: 0.6rem; align-items: center; justify-content: space-between; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+.content-list li:last-child { border-bottom: 0; }
+.content-main { display: flex; flex-direction: column; min-width: 0; }
+.content-main small { color: var(--ink-muted); font-size: 0.75rem; }
+.content-emoji { font-size: 1.3rem; }
+.content-actions { display: flex; gap: 0.6rem; flex-shrink: 0; }
+.is-quran { font-family: 'Amiri Quran', 'Amiri', serif; }

@@ -1,9 +1,10 @@
 import { Link } from 'react-router'
-import { CircleIcon, ReportIcon, SettingsIcon } from '../components/icons'
+import { CircleIcon, GamesIcon, ReportIcon, SettingsIcon } from '../components/icons'
 import { PageHeader } from '../components/PageHeader'
 
 const LINKS = [
   { to: '/groups', label: 'الحلقات', hint: 'مواعيد الحلقات، والجدول الأسبوعي والأوقات الفاضية', icon: <CircleIcon /> },
+  { to: '/games', label: 'الألعاب', hint: 'ألعاب الحفظ والمعاني للحصة، ومحتواها', icon: <GamesIcon /> },
   { to: '/reports', label: 'التقارير', hint: 'تقارير أولياء الأمور، وكشوف الأكاديميات، والحضور، وملخصك', icon: <ReportIcon /> },
   { to: '/settings', label: 'الإعدادات', hint: 'الإشعارات، والمظهر، والنسخة الاحتياطية', icon: <SettingsIcon /> },
 ]
