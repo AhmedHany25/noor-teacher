@@ -1,15 +1,27 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { PageHeader } from '../../components/PageHeader'
 import type { GameInfo } from '../../domain/gameCatalog'
 import { toArabicDigits } from '../../lib/format'
-import { JUDGE_TEXT, type GameSetup, type Judgement } from './gameHooks'
+import { isMuted, setMuted } from '../../lib/gameSounds'
+import { JUDGE_TEXT, useGameScale, type GameSetup, type Judgement, type Score } from './gameHooks'
 
-/** The teacher's three buttons after the student answers aloud. */
+/** The teacher's three buttons after the student answers aloud (keys 1, 2, 3 on a keyboard). */
 export function JudgeBar({ onJudge }: { onJudge: (j: Judgement) => void }) {
+  const keys: Judgement[] = ['ok', 'help', 'bad']
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = (e.target as HTMLElement).tagName
+      if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || e.repeat) return
+      const k = ['1', '2', '3', '١', '٢', '٣'].indexOf(e.key) % 3
+      if (k >= 0) onJudge(keys[k])
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
   return (
     <div className="judge-bar" role="group" aria-label="تقييم الإجابة">
-      {(Object.keys(JUDGE_TEXT) as Judgement[]).map((j) => (
+      {keys.map((j) => (
         <button key={j} type="button" className={`judge judge-${j}`} onClick={() => onJudge(j)}>
           {JUDGE_TEXT[j]}
         </button>
@@ -31,19 +43,51 @@ export function Progress({ i, n }: { i: number; n: number }) {
   )
 }
 
-/** Page frame for a game: header with the way back to the games list. */
-export function GameFrame({ info, setup, children }: { info: GameInfo; setup: GameSetup; children: ReactNode }) {
+/** Page frame for a game: header, live score, sound and text size, and the way back. */
+export function GameFrame({ info, setup, score, children }: { info: GameInfo; setup: GameSetup; score?: Score; children: ReactNode }) {
+  const [scale, changeScale] = useGameScale()
+  const [muted, setMutedState] = useState(isMuted)
+  const step = setup.session
   return (
-    <div className="game-screen">
+    <div className="game-screen" style={{ ['--game-scale' as string]: scale }}>
       <PageHeader
         title={`${info.icon} ${info.title}`}
-        subtitle={setup.student ? setup.student.name : undefined}
+        subtitle={[setup.student?.name, step && `لعبة ${toArabicDigits(step.step + 1)} من ${toArabicDigits(step.total)}`].filter(Boolean).join(' · ') || undefined}
         action={
-          <Link to={`/games?${setup.query}`} className="btn btn-ghost-light">
+          <Link to={`/games?${setup.query.replace(/(^|&)games=[^&]*/, '').replace(/(^|&)order=[^&]*/, '')}`} className="btn btn-ghost-light">
             الألعاب
           </Link>
         }
       />
+      <div className="game-toolbar">
+        {score && (
+          <span className="game-score" aria-label="النتيجة لحد دلوقتي">
+            <span className="gs-ok">✅ {toArabicDigits(score.ok)}</span>
+            <span className="gs-help">🟡 {toArabicDigits(score.help)}</span>
+            <span className="gs-bad">❌ {toArabicDigits(score.bad)}</span>
+          </span>
+        )}
+        <span className="game-tools">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={muted ? 'تشغيل الصوت' : 'كتم الصوت'}
+            aria-pressed={muted}
+            onClick={() => {
+              setMuted(!muted)
+              setMutedState(!muted)
+            }}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
+          <button type="button" className="icon-btn" aria-label="تصغير الخط" onClick={() => changeScale(-0.1)}>
+            أ-
+          </button>
+          <button type="button" className="icon-btn" aria-label="تكبير الخط" onClick={() => changeScale(0.1)}>
+            أ+
+          </button>
+        </span>
+      </div>
       {children}
     </div>
   )

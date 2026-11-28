@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { GameInfo } from '../../domain/gameCatalog'
 import type { QuranText } from '../../domain/mushaf'
 import { quizQuestions, type Question, type QuizType } from '../../domain/quiz'
-import { useCelebrate, useSaveResult, useScore, type GameSetup, type Judgement } from './gameHooks'
+import { useFeedback, useFinish, useScore, type GameSetup, type Judgement } from './gameHooks'
 import { GameFrame, JudgeBar, Progress, ResultView } from './shared'
 
 /** One memorisation game: the student answers aloud and the teacher judges, or taps one of the options. */
@@ -16,24 +16,39 @@ function QuizRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Gam
   const [i, setI] = useState(0)
   const [shown, setShown] = useState(false)
   const [picked, setPicked] = useState<string>()
-  const [saved, setSaved] = useState<boolean>()
+  const [saved, setSaved] = useState(false)
   const { score, review, add } = useScore()
-  const { celebrate, layer } = useCelebrate()
-  const { save } = useSaveResult(setup)
+  const fb = useFeedback()
+  const finish = useFinish(info, setup)
   const tap = info.choice && setup.mode === 'tap'
   const x = questions[i]
 
+  // Space shows the answer (teacher judging), on a keyboard.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === ' ' && !tap && (e.target as HTMLElement).tagName !== 'BUTTON') {
+        e.preventDefault()
+        setShown(true)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [tap])
+
+  // No questions possible: in a series, move on to the next game.
+  useEffect(() => {
+    if (!questions.length) setup.session?.onDone({ ok: 0, help: 0, bad: 0 }, [])
+  }, [questions.length, setup.session])
+
   function next(j: Judgement) {
-    add(j, x.review)
-    if (j === 'ok' && !tap) celebrate()
+    const r = add(j, x.review)
+    if (!tap) fb.judge(j)
     if (i + 1 < questions.length) {
       setI(i + 1)
       setShown(false)
       setPicked(undefined)
     } else {
-      const final = { ok: score.ok + (j === 'ok' ? 1 : 0), help: score.help + (j === 'help' ? 1 : 0), bad: score.bad + (j === 'bad' ? 1 : 0) }
-      const rev = j !== 'ok' && !review.includes(x.review) ? [...review, x.review] : review
-      setSaved(save({ game: info.id, title: info.title, ...final, surahs: setup.surahs, review: rev }))
+      setSaved(finish(r))
       setI(questions.length)
     }
   }
@@ -49,16 +64,17 @@ function QuizRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Gam
   }
 
   if (i >= questions.length) {
+    if (setup.session) return null
     return (
       <GameFrame info={info} setup={setup}>
-        <ResultView info={info} setup={setup} score={score} review={review} saved={!!saved} onAgain={onAgain} />
+        <ResultView info={info} setup={setup} score={score} review={review} saved={saved} onAgain={onAgain} />
       </GameFrame>
     )
   }
 
   return (
-    <GameFrame info={info} setup={setup}>
-      {layer}
+    <GameFrame info={info} setup={setup} score={score}>
+      {fb.layer}
       <section className="game-card card" aria-label="السؤال">
         <Progress i={i} n={questions.length} />
         <p className="game-ask">{x.ask}</p>
@@ -77,7 +93,8 @@ function QuizRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Gam
                   disabled={!tap || !!picked}
                   onClick={() => {
                     setPicked(o)
-                    if (o === x.answer) celebrate()
+                    if (o === x.answer) fb.ok()
+                    else fb.bad()
                   }}
                 >
                   {o}
@@ -106,7 +123,7 @@ function QuizRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Gam
           <div className="game-next">
             <b>{picked === x.answer ? 'صح، برافو!' : 'الإجابة الصح متعلّم عليها بالأخضر'}</b>
             <button type="button" className="btn btn-primary" onClick={() => next(picked === x.answer ? 'ok' : 'bad')}>
-              {i + 1 < questions.length ? 'التالي' : 'النتيجة'}
+              {i + 1 < questions.length ? 'التالي' : setup.session ? 'اللعبة اللي بعدها' : 'النتيجة'}
             </button>
           </div>
         )

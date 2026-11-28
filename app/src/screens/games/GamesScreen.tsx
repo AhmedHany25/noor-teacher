@@ -1,15 +1,25 @@
-import { Link, useSearchParams } from 'react-router'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { PageHeader } from '../../components/PageHeader'
 import { useGameContent, useSessions, useStudents } from '../../data/data'
 import { useSeedGameContent } from './gameHooks'
-import { GAME_GROUPS, type GameInfo } from '../../domain/gameCatalog'
+import { ALL_GAMES, GAME_GROUPS, type GameId, type GameInfo } from '../../domain/gameCatalog'
 import { surahsWith } from '../../domain/gameContent'
 import { planFor } from '../../domain/games'
 import { surahName } from '../../domain/quran'
 import { SURAHS } from '../../domain/surahs'
 import { toArabicDigits } from '../../lib/format'
 
-const COUNTS = [5, 10, 15, 20]
+const COUNTS = [3, 5, 10, 15, 20]
+const SETUP_KEY = 'noor-games-setup'
+
+function loadSetup(): string {
+  try {
+    return localStorage.getItem(SETUP_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
 
 /** Route: /games — choose the student, the surahs and how many questions, then a game. */
 export function GamesScreen() {
@@ -18,6 +28,26 @@ export function GamesScreen() {
   const { items: students } = useStudents()
   const { items: sessions } = useSessions()
   const { items: content } = useGameContent()
+  const navigate = useNavigate()
+  const [multi, setMulti] = useState(false)
+  const [picked, setPicked] = useState<GameId[]>([])
+  const [order, setOrder] = useState<'seq' | 'random'>('seq')
+
+  // Open where the teacher left off (surahs, count, who answers) when nothing is in the link.
+  useEffect(() => {
+    if (params.toString()) return
+    const saved = loadSetup()
+    if (saved) setParams(new URLSearchParams(saved), { replace: true })
+    // Only on opening the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => {
+    try {
+      if (params.toString()) localStorage.setItem(SETUP_KEY, params.toString())
+    } catch {
+      // not remembered
+    }
+  }, [params])
   const studentId = params.get('student') ?? ''
   const student = students.find((s) => s.id === studentId)
   const chosen = (params.get('s') ?? '')
@@ -50,6 +80,20 @@ export function GamesScreen() {
   if (surahs.length) q.set('s', surahs.join(','))
   const query = q.toString()
   const choices = students.filter((s) => s.status === 'active').sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+  const readyFor = (g: GameInfo) => surahs.length > 0 && (!g.needs || surahs.some((x) => surahsWith(content, g.needs!).includes(x)))
+  const togglePick = (id: GameId) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
+  const memorisation = GAME_GROUPS[0].games
+  function quickReview() {
+    const ready = ALL_GAMES.filter((g) => g.id !== 'erase' && readyFor(g))
+    setPicked([...ready].sort(() => Math.random() - 0.5).slice(0, 5).map((g) => g.id))
+    setOrder('random')
+  }
+  function startSeries() {
+    const q2 = new URLSearchParams(query)
+    q2.set('games', picked.join(','))
+    q2.set('order', order)
+    navigate(`/games/series?${q2}`)
+  }
 
   return (
     <>
@@ -138,6 +182,32 @@ export function GamesScreen() {
         {!surahs.length && <p className="field-hint">اختار سورة واحدة على الأقل عشان تبدأ.</p>}
       </section>
 
+      <div className="games-modes">
+        <div className="segmented" role="group" aria-label="طريقة اللعب">
+          <button type="button" className={multi ? 'segment-btn' : 'segment-btn is-on'} onClick={() => setMulti(false)}>
+            🎮 لعبة واحدة
+          </button>
+          <button type="button" className={multi ? 'segment-btn is-on' : 'segment-btn'} onClick={() => setMulti(true)}>
+            ✅ أكتر من لعبة
+          </button>
+        </div>
+        {multi && (
+          <div className="chip-row">
+            <button type="button" className="chip" onClick={() => setPicked(memorisation.filter(readyFor).map((g) => g.id))} disabled={!surahs.length}>
+              كل أسئلة الحفظ
+            </button>
+            <button type="button" className="chip" onClick={quickReview} disabled={!surahs.length}>
+              مراجعة سريعة (٥ عشوائي)
+            </button>
+            {picked.length > 0 && (
+              <button type="button" className="chip" onClick={() => setPicked([])}>
+                امسح الاختيار
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {GAME_GROUPS.map((g) => (
         <section key={g.title} className="games-group" aria-label={g.title}>
           <h2 className="section-title">
@@ -145,16 +215,51 @@ export function GamesScreen() {
           </h2>
           <div className="games-grid">
             {g.games.map((x) => (
-              <GameCard key={x.id} info={x} query={query} surahs={surahs} withContent={x.needs ? surahsWith(content, x.needs) : undefined} />
+              <GameCard
+                key={x.id}
+                info={x}
+                query={query}
+                surahs={surahs}
+                withContent={x.needs ? surahsWith(content, x.needs) : undefined}
+                pick={multi ? { on: picked.includes(x.id), n: picked.indexOf(x.id) + 1, toggle: () => togglePick(x.id) } : undefined}
+              />
             ))}
           </div>
         </section>
       ))}
+
+      {multi && picked.length > 0 && (
+        <div className="series-bar card" role="region" aria-label="الألعاب المختارة">
+          <div className="segmented" role="group" aria-label="ترتيب الألعاب">
+            <button type="button" className={order === 'seq' ? 'segment-btn is-on' : 'segment-btn'} onClick={() => setOrder('seq')}>
+              بالترتيب
+            </button>
+            <button type="button" className={order === 'random' ? 'segment-btn is-on' : 'segment-btn'} onClick={() => setOrder('random')}>
+              عشوائي
+            </button>
+          </div>
+          <button type="button" className="btn btn-primary" onClick={startSeries}>
+            {picked.length === 1 ? 'ابدأ اللعبة' : picked.length === 2 ? 'ابدأ اللعبتين' : `ابدأ ${toArabicDigits(picked.length)} ${picked.length <= 10 ? 'ألعاب' : 'لعبة'}`}
+          </button>
+        </div>
+      )}
     </>
   )
 }
 
-function GameCard({ info, query, surahs, withContent }: { info: GameInfo; query: string; surahs: number[]; withContent?: number[] }) {
+function GameCard({
+  info,
+  query,
+  surahs,
+  withContent,
+  pick,
+}: {
+  info: GameInfo
+  query: string
+  surahs: number[]
+  withContent?: number[]
+  pick?: { on: boolean; n: number; toggle: () => void }
+}) {
   const covered = withContent ? surahs.filter((s) => withContent.includes(s)) : surahs
   const ready = covered.length > 0
   const note = !surahs.length
@@ -178,6 +283,14 @@ function GameCard({ info, query, surahs, withContent }: { info: GameInfo; query:
       </span>
     </>
   )
+  if (pick) {
+    return (
+      <button type="button" className={`game-tile${pick.on ? ' is-picked' : ''}${ready ? '' : ' is-off'}`} aria-pressed={pick.on} disabled={!ready} onClick={pick.toggle}>
+        {body}
+        {pick.on && <span className="pick-n">{toArabicDigits(pick.n)}</span>}
+      </button>
+    )
+  }
   if (!ready) {
     return withContent && surahs.length ? (
       <Link to="/games/content" className="game-tile is-off" aria-label={`${info.title}: أضف محتوى`}>

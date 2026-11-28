@@ -81,6 +81,41 @@ describe('Games', () => {
     expect(screen.getByText('كلها صح، برافو!')).toBeInTheDocument()
   })
 
+  it('picks several games and plays them in a row, then shows one summary', async () => {
+    const { repos } = renderApp('/games?student=y1&s=112&n=3', { students: [yusuf], groups: [group], ...seeded }, { now: NOW })
+    await userEvent.click(screen.getByRole('button', { name: /أكتر من لعبة/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^الآية التالية/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^عدد آيات السورة/ }))
+    await userEvent.click(within(screen.getByRole('region', { name: 'الألعاب المختارة' })).getByRole('button', { name: 'ابدأ اللعبتين' }))
+
+    expect(await screen.findByText(/لعبة ١ من ٢/)).toBeInTheDocument()
+    for (let i = 0; i < 3; i++) await userEvent.click(await screen.findByRole('button', { name: 'صح' }))
+    expect(await screen.findByText(/لعبة ٢ من ٢/)).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: 'خطأ' }))
+
+    const summary = await screen.findByRole('region', { name: 'النتيجة' })
+    expect(within(summary).getByRole('table', { name: 'كل لعبة' })).toHaveTextContent('الآية التالية')
+    expect(summary).toHaveTextContent('عدد آيات السورة')
+    expect(repos.sessions.all()[0].notes?.y1?.games?.map((g) => g.game)).toEqual(['next', 'cnt'])
+  })
+
+  it('celebrates a right answer and judges with the keyboard', async () => {
+    renderApp('/games/next?s=112&n=2', { students: [yusuf], ...seeded }, { now: NOW })
+    await screen.findByRole('button', { name: 'اعرض الإجابة' })
+    await userEvent.keyboard('1')
+    expect(document.querySelector('.fx-ok .fx-big')).toBeInTheDocument()
+    expect(screen.getByLabelText('النتيجة لحد دلوقتي')).toHaveTextContent('✅ ١')
+    await userEvent.keyboard('3')
+    expect(document.querySelector('.fx-bad')).toBeInTheDocument()
+  })
+
+  it('remembers the last setup when the games page is opened again', async () => {
+    localStorage.setItem('noor-games-setup', 's=78&n=5')
+    renderApp('/games', { students: [yusuf], ...seeded }, { now: NOW })
+    expect(await screen.findByRole('button', { name: 'شيل سورة النبأ' })).toBeInTheDocument()
+    localStorage.removeItem('noor-games-setup')
+  })
+
   it('adds a word meaning from the content screen', async () => {
     const { repos } = renderApp('/games/content', { students: [yusuf], ...seeded }, { now: NOW })
     await userEvent.click(screen.getByRole('tab', { name: /معاني الكلمات/ }))

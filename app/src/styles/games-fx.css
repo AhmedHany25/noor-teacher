@@ -1,0 +1,149 @@
+/* ----- Games: toolbar, multi-game picking, celebrations ----- */
+.game-screen { --game-scale: 1; }
+.game-screen .game-quran { font-size: calc(1.65rem * var(--game-scale)); }
+.game-screen .game-plain { font-size: calc(1.35rem * var(--game-scale)); }
+.game-screen .game-option { font-size: calc(1.05rem * var(--game-scale)); }
+.game-screen .game-option.is-quran,
+.game-screen .play-chip,
+.game-screen .match-word { font-size: calc(1.3rem * var(--game-scale)); }
+.game-screen .game-ask { font-size: calc(1rem * var(--game-scale)); }
+
+.game-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.game-score { display: inline-flex; gap: 0.35rem; font-weight: 800; font-size: 0.9rem; }
+.game-score span { padding: 0.15rem 0.55rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); }
+.game-tools { display: inline-flex; gap: 0.25rem; margin-inline-start: auto; }
+
+.games-modes { display: grid; gap: 0.5rem; margin-bottom: 1rem; }
+.games-modes .segmented { display: flex; }
+
+button.game-tile { position: relative; width: 100%; font: inherit; text-align: start; cursor: pointer; }
+button.game-tile:disabled { cursor: not-allowed; }
+.game-tile.is-picked { border-color: var(--emerald); box-shadow: 0 0 0 2px var(--emerald); }
+.pick-n {
+  position: absolute;
+  top: -0.5rem;
+  inset-inline-end: -0.4rem;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--emerald);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.8rem;
+  line-height: 1.5rem;
+  text-align: center;
+}
+
+.series-bar {
+  position: sticky;
+  bottom: calc(var(--tabbar-height, 4rem) + 0.5rem + env(safe-area-inset-bottom));
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  box-shadow: 0 -2px 18px rgba(0, 0, 0, 0.18);
+}
+.series-bar .segmented { display: flex; flex: 1; }
+@media (min-width: 900px) {
+  .series-bar { bottom: 1rem; }
+}
+.series-table { margin: 0.25rem 0 0.75rem; width: 100%; }
+
+/* Celebrations: a big icon with a word, and particles that fly, rise or fall. */
+.fx { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; pointer-events: none; overflow: hidden; }
+.fx-big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.9rem 1.6rem;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  animation: fx-pop 1.4s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+}
+.fx-icon { font-size: 4.5rem; line-height: 1.1; }
+.fx-big b { font-size: 1.5rem; font-weight: 900; color: var(--emerald-strong); }
+.fx-help .fx-big b { color: #b86e00; }
+.fx-bad .fx-big b { color: #c0392b; }
+.fx-help .fx-big,
+.fx-bad .fx-big { animation: fx-soft 1s ease-out forwards; }
+.fx-help .fx-icon,
+.fx-bad .fx-icon { font-size: 3rem; }
+
+@keyframes fx-pop {
+  0% { transform: scale(0.3) rotate(-12deg); opacity: 0; }
+  18% { transform: scale(1.15) rotate(4deg); opacity: 1; }
+  30% { transform: scale(1) rotate(0); }
+  80% { opacity: 1; }
+  100% { transform: scale(0.9) translateY(-20px); opacity: 0; }
+}
+@keyframes fx-soft {
+  0% { transform: translateY(14px); opacity: 0; }
+  20% { transform: translateY(0); opacity: 1; }
+  75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.fx i {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-style: normal;
+  font-size: 1.6rem;
+  color: var(--gold-bright);
+}
+/* stars, medal, thumbs: burst outwards in a circle */
+.fx-stars i,
+.fx-medal i,
+.fx-thumbs i { animation: fx-burst 1.1s ease-out forwards; }
+.fx-medal i { color: #f5b82e; }
+.fx-thumbs i { color: var(--emerald); }
+@keyframes fx-burst {
+  0% { transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg)) translateY(0) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) rotate(calc(var(--i) * 20deg)) translateY(-34vmin) scale(1.3); opacity: 0; }
+}
+/* hearts: rise from the bottom */
+.fx-hearts i {
+  top: auto;
+  bottom: -2rem;
+  left: calc(var(--r) * 96%);
+  color: #ec4a56;
+  font-size: calc(1.2rem + var(--r) * 1.6rem);
+  animation: fx-rise 1.5s ease-out forwards;
+  animation-delay: calc(var(--r) * 0.35s);
+}
+@keyframes fx-rise {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-75vh) scale(1.1); opacity: 0; }
+}
+/* confetti and trophy: fall from the top in colours */
+.fx-confetti i,
+.fx-trophy i {
+  top: -2rem;
+  left: calc(var(--r) * 98%);
+  font-size: 0.9rem;
+  animation: fx-fall 1.5s ease-in forwards;
+  animation-delay: calc(var(--r) * 0.3s);
+}
+.fx-confetti i:nth-child(3n) { color: #e5484d; }
+.fx-confetti i:nth-child(3n + 1) { color: #2f7fd0; }
+.fx-confetti i:nth-child(3n + 2) { color: #3f9a4a; }
+.fx-trophy i { color: #f5b82e; font-size: 1.3rem; }
+@keyframes fx-fall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(calc(var(--i) * 70deg)); opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx i { display: none; }
+  .fx-big { animation: fx-soft 1s ease-out forwards; }
+}

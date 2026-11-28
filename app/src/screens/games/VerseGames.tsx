@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { GameInfo } from '../../domain/gameCatalog'
 import { orderTasks, passageText, type OrderTask } from '../../domain/gameRounds'
 import { ayahWords, type QuranText } from '../../domain/mushaf'
 import { ayahCount, surahName } from '../../domain/quran'
 import { toArabicDigits } from '../../lib/format'
-import { useCelebrate, useSaveResult, useScore, type GameSetup, type Judgement } from './gameHooks'
+import { useFeedback, useFinish, useScore, type GameSetup, type Judgement } from './gameHooks'
 import { GameFrame, Progress, ResultView } from './shared'
 
 /** «رتّب الآية»: the student taps the words in order; mistakes decide right / with help / wrong. */
@@ -21,9 +21,13 @@ function OrderRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Ga
   const [shake, setShake] = useState<number>()
   const [saved, setSaved] = useState(false)
   const { score, review, add } = useScore()
-  const { celebrate, layer } = useCelebrate()
-  const { save } = useSaveResult(setup)
+  const fb = useFeedback()
+  const finish = useFinish(info, setup)
   const t = tasks[i]
+
+  useEffect(() => {
+    if (!tasks.length) setup.session?.onDone({ ok: 0, help: 0, bad: 0 }, [])
+  }, [tasks.length, setup.session])
 
   if (!tasks.length) {
     return (
@@ -35,6 +39,7 @@ function OrderRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Ga
     )
   }
   if (!t) {
+    if (setup.session) return null
     return (
       <GameFrame info={info} setup={setup}>
         <ResultView info={info} setup={setup} score={score} review={review} saved={saved} onAgain={onAgain} />
@@ -50,20 +55,18 @@ function OrderRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Ga
       const next = [...placed, k]
       setPlaced(next)
       setShake(undefined)
-      if (next.length === t.words.length && wrong === 0) celebrate()
+      if (next.length === t.words.length) fb.judge(wrong === 0 ? 'ok' : wrong <= 2 ? 'help' : 'bad')
+      else fb.tick()
     } else {
       setWrong((n) => n + 1)
       setShake(k)
+      fb.wrongTap()
     }
   }
 
   function next() {
-    const place = `${surahName(t.s)} ${toArabicDigits(t.a)}`
-    add(judge, place)
-    if (i + 1 >= tasks.length) {
-      const final = { ok: score.ok + (judge === 'ok' ? 1 : 0), help: score.help + (judge === 'help' ? 1 : 0), bad: score.bad + (judge === 'bad' ? 1 : 0) }
-      setSaved(save({ game: info.id, title: info.title, ...final, surahs: setup.surahs, review: judge === 'ok' ? review : [...review, place] }))
-    }
+    const r = add(judge, `${surahName(t.s)} ${toArabicDigits(t.a)}`)
+    if (i + 1 >= tasks.length) setSaved(finish(r))
     setI(i + 1)
     setPlaced([])
     setWrong(0)
@@ -71,8 +74,8 @@ function OrderRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Ga
   }
 
   return (
-    <GameFrame info={info} setup={setup}>
-      {layer}
+    <GameFrame info={info} setup={setup} score={score}>
+      {fb.layer}
       <section className="game-card card" aria-label="رتّب الآية">
         <Progress i={i} n={tasks.length} />
         <p className="game-ask">
@@ -95,7 +98,7 @@ function OrderRound({ info, setup, quran, onAgain }: { info: GameInfo; setup: Ga
         <div className="game-next">
           <b>{wrong === 0 ? 'من غير ولا غلطة، برافو!' : `خلصها بـ ${toArabicDigits(wrong)} ${wrong === 1 ? 'غلطة' : 'غلطات'}`}</b>
           <button type="button" className="btn btn-primary" onClick={next}>
-            {i + 1 < tasks.length ? 'التالي' : 'النتيجة'}
+            {i + 1 < tasks.length ? 'التالي' : setup.session ? 'اللعبة اللي بعدها' : 'النتيجة'}
           </button>
         </div>
       )}
@@ -125,8 +128,8 @@ export function EraseGame({ info, setup, quran }: { info: GameInfo; setup: GameS
   const [step, setStep] = useState(3)
   const [stars, setStars] = useState(0)
   const [finished, setFinished] = useState<boolean | null>(null)
-  const { celebrate, layer } = useCelebrate()
-  const { save } = useSaveResult(setup)
+  const fb = useFeedback()
+  const finish = useFinish(info, setup)
 
   function change(next: Set<number>) {
     setHistory((h) => [...h, hidden])
@@ -158,6 +161,7 @@ export function EraseGame({ info, setup, quran }: { info: GameInfo; setup: GameS
   }
 
   if (finished !== null) {
+    if (setup.session) return null
     return (
       <GameFrame info={info} setup={setup}>
         <ResultView
@@ -179,7 +183,7 @@ export function EraseGame({ info, setup, quran }: { info: GameInfo; setup: GameS
   const pct = words.length ? Math.round((hidden.size / words.length) * 100) : 0
   return (
     <GameFrame info={info} setup={setup}>
-      {layer}
+      {fb.layer}
       <div className="mushaf-bar card">
         <select aria-label="السورة" value={s} onChange={(e) => setRange(1, Math.min(ayahCount(Number(e.target.value)), 7), Number(e.target.value))}>
           {(setup.surahs.length ? setup.surahs : [s]).map((x) => (
@@ -262,7 +266,7 @@ export function EraseGame({ info, setup, quran }: { info: GameInfo; setup: GameS
           className="btn btn-gold"
           onClick={() => {
             setStars(stars + 1)
-            celebrate()
+            fb.ok()
           }}
         >
           ⭐ أحسنت
@@ -279,7 +283,7 @@ export function EraseGame({ info, setup, quran }: { info: GameInfo; setup: GameS
         <button
           type="button"
           className="btn btn-quiet"
-          onClick={() => setFinished(save({ game: info.id, title: info.title, ok: stars, help: 0, bad: 0, surahs: [s], review: [] }))}
+          onClick={() => setFinished(finish({ score: { ok: stars, help: 0, bad: 0 }, review: [] }, [s]))}
         >
           خلّصنا
         </button>
