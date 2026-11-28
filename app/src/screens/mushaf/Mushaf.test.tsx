@@ -49,20 +49,35 @@ describe('Mushaf', () => {
     await userEvent.click(screen.getByRole('radio', { name: 'تجويد' }))
     await userEvent.click(within(screen.getByRole('article')).getAllByRole('button')[5])
     expect(repos.sessions.all()[0].notes?.s1?.mistakes).toHaveLength(2)
-    expect(screen.getByRole('radiogroup', { name: 'نوع الغلطة' })).toHaveTextContent('غلطات الحصة: ٢')
+    expect(screen.getByRole('radiogroup', { name: 'نوع الغلطة' })).toHaveTextContent('غلطات حصة النهارده: ٢')
 
     await userEvent.click(screen.getByRole('radio', { name: 'حفظ' }))
     await userEvent.click(within(screen.getByRole('article')).getAllByRole('button')[2])
     expect(repos.sessions.all()[0].notes?.s1?.mistakes).toEqual([{ s: 112, a: 2, w: 1, type: 'tajweed' }])
   })
 
-  it("finds the student's lesson today, or offers to record it present first", async () => {
+  it("marks straight away during today's lesson, recording the student present", async () => {
     const { repos } = renderApp('/mushaf?student=s1&s=112', { students: [yusuf], groups: [group] }, { now: NOW })
-    await userEvent.click(await screen.findByRole('button', { name: 'سجّله حاضر وابدأ تعليم الأخطاء' }))
-    expect(repos.sessions.all()[0]).toMatchObject({ id: 'g_2026-11-27', attendance: { s1: { status: 'p' } } })
     const text = await screen.findByRole('article', { name: 'نص سورة الإخلاص' })
     await userEvent.click(within(text).getAllByRole('button')[0])
-    expect(repos.sessions.all()[0].notes?.s1?.mistakes).toEqual([{ s: 112, a: 1, w: 0, type: 'hifz' }])
+    expect(repos.sessions.all()[0]).toMatchObject({
+      id: 'g_2026-11-27',
+      attendance: { s1: { status: 'p' } },
+      notes: { s1: { mistakes: [{ s: 112, a: 1, w: 0, type: 'hifz' }] } },
+    })
+    expect(screen.getByRole('status')).toHaveTextContent('اتسجل حضور يوسف')
+  })
+
+  it('without a lesson today, marks in the last lesson the student attended', async () => {
+    const { repos } = renderApp(
+      '/mushaf?student=s1&s=112',
+      { students: [yusuf], groups: [{ ...group, slots: [{ weekday: 1, time: '17:00' }] }], sessions: [lesson('2026-11-23')] },
+      { now: NOW },
+    )
+    const text = await screen.findByRole('article', { name: 'نص سورة الإخلاص' })
+    expect(screen.getByRole('radiogroup', { name: 'نوع الغلطة' })).toHaveTextContent('غلطات حصة الاثنين، ٢٣ نوفمبر')
+    await userEvent.click(within(text).getAllByRole('button')[1])
+    expect(repos.sessions.all()[0].notes?.s1?.mistakes).toEqual([{ s: 112, a: 1, w: 1, type: 'hifz' }])
   })
 
   it('turns pages through a long surah and on to the next one', async () => {
@@ -76,11 +91,17 @@ describe('Mushaf', () => {
     expect(await screen.findByRole('article', { name: 'نص سورة الفاتحة' })).toBeInTheDocument()
   })
 
-  it("colours the student's earlier word mistakes and is read-only without a lesson", async () => {
+  it("colours the student's earlier word mistakes", async () => {
     const before = lesson('2026-11-20', { notes: { s1: { mistakes: [{ s: 112, a: 2, w: 0, type: 'hifz' }] } } })
     renderApp('/mushaf?student=s1&s=112', { students: [yusuf], groups: [group], sessions: [before] }, { now: NOW })
     const text = await screen.findByRole('article', { name: 'نص سورة الإخلاص' })
-    expect(within(text).queryAllByRole('button')).toHaveLength(0)
     expect(text.querySelectorAll('.w-c1')).toHaveLength(1)
+  })
+
+  it('is read-only without a student', async () => {
+    renderApp('/mushaf?s=112', { students: [yusuf], groups: [group] }, { now: NOW })
+    const text = await screen.findByRole('article', { name: 'نص سورة الإخلاص' })
+    expect(within(text).queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByText(/اختار الطالب عشان تسجّل أخطاءه/)).toBeInTheDocument()
   })
 })

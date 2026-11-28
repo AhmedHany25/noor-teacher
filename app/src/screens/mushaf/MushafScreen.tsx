@@ -11,7 +11,7 @@ import { surahName } from '../../domain/quran'
 import { occurrencesOn } from '../../domain/schedule'
 import { SURAHS } from '../../domain/surahs'
 import { useClock } from '../../lib/clock'
-import { toArabicDigits } from '../../lib/format'
+import { longDate, toArabicDigits } from '../../lib/format'
 import { useQuran } from '../../lib/quranText'
 
 const SIZES = [20, 23, 26, 30, 34, 40] // px
@@ -62,7 +62,7 @@ function useWidth() {
  */
 export function MushafScreen() {
   const [params, setParams] = useSearchParams()
-  const { repos } = useData()
+  const { repos, notify } = useData()
   const { today } = useClock()
   const { quran, failed } = useQuran()
   const { items: students } = useStudents()
@@ -84,24 +84,29 @@ export function MushafScreen() {
   const studentId = params.get('student') ?? ''
   const student = students.find((x) => x.id === studentId)
 
-  // Where mistakes go: the lesson in the link, else the student's lesson today.
-  const session: Session | undefined =
-    sessions.find((x) => x.id === params.get('session')) ??
-    (student ? sessions.find((x) => x.date === today && x.attendance[student.id]?.status === 'p') : undefined)
-  const marking = !!(student && session?.attendance[student.id]?.status === 'p')
-  // A lesson today for this student alone, not recorded yet: offer to record it present.
-  const pending = useMemo(() => {
-    if (!student || marking) return undefined
-    const o = occurrencesOn(groups, today).find((x) => {
-      const g = groups.find((y) => y.id === x.groupId)
-      return !x.cancelledBy && g?.studentIds.length === 1 && g.studentIds[0] === student.id
-    })
-    return o && !sessions.some((x) => x.id === sessionId(o.groupId, o.date)) ? o : undefined
-  }, [student, marking, groups, sessions, today])
+  // Where mistakes go, so marking works the moment a student is chosen:
+  // the lesson in the link → the student's lesson today (recorded or not) → their last lesson.
+  const target = useMemo(() => {
+    if (!student) return undefined
+    const inGroup = (groupId: string) => groups.find((g) => g.id === groupId)?.studentIds.includes(student.id)
+    const linked = sessions.find((x) => x.id === params.get('session'))
+    if (linked && (linked.attendance[student.id] || inGroup(linked.groupId))) return { session: linked, today: linked.date === today }
+    const occ = occurrencesOn(groups, today).find((o) => !o.cancelledBy && inGroup(o.groupId))
+    if (occ) {
+      const existing = sessions.find((x) => x.id === sessionId(occ.groupId, occ.date))
+      return { session: existing, occ, today: true }
+    }
+    const last = sessions
+      .filter((x) => x.attendance[student.id]?.status === 'p' && x.date <= today)
+      .sort((x, y) => y.date.localeCompare(x.date))[0]
+    return last ? { session: last, today: false } : undefined
+  }, [student, groups, sessions, params, today])
+  const session: Session | undefined = target?.session
+  const marking = !!target
 
   const lessonMistakes: Mistake[] = useMemo(
-    () => (marking && student ? (session?.notes?.[student.id]?.mistakes ?? []) : []),
-    [marking, student, session],
+    () => (student ? (session?.notes?.[student.id]?.mistakes ?? []) : []),
+    [student, session],
   )
   const wordCounts = useMemo(
     () => (student ? wordMistakeCounts(sessions, student.id, session?.id) : new Map<string, number>()),
@@ -122,19 +127,28 @@ export function MushafScreen() {
   }
 
   function tapWord(a: number, w: number) {
-    if (!marking || !student || !session) return
+    if (!student || !target) return
     const list = toggleWordMistake(lessonMistakes, { s, a, w, type: prefs.brush })
-    const { mistakes: _old, ...rest } = session.notes?.[student.id] ?? {}
-    repos.sessions.patch(session.id, { notes: { ...session.notes, [student.id]: list.length ? { ...rest, mistakes: list } : rest } })
+    const { mistakes: _old, ...rest } = session?.notes?.[student.id] ?? {}
+    const notes = { ...session?.notes, [student.id]: list.length ? { ...rest, mistakes: list } : rest }
+    const present = { status: 'p' as const, billable: true }
+    if (session) {
+      // A student reading in the lesson is there: record them present if not yet.
+      const attendance = session.attendance[student.id] ? session.attendance : { ...session.attendance, [student.id]: present }
+      repos.sessions.patch(session.id, attendance === session.attendance ? { notes } : { notes, attendance })
+      if (attendance !== session.attendance) notify(`اتسجل حضور ${student.name}`)
+    } else if (target.occ) {
+      const g = groups.find((x) => x.id === target.occ.groupId)!
+      repos.sessions.put(sessionId(target.occ.groupId, target.occ.date), {
+        ...quickRecord(target.occ, g, 'p', undefined, Date.now()),
+        attendance: { [student.id]: present },
+        notes,
+      })
+      notify(`اتسجل حضور ${student.name} في حصة النهارده`)
+    }
   }
 
-  function startLesson() {
-    if (!pending) return
-    const g = groups.find((x) => x.id === pending.groupId)!
-    repos.sessions.put(sessionId(pending.groupId, pending.date), quickRecord(pending, g, 'p', undefined, Date.now()))
-  }
-
-  const back = marking && session ? `/lessons/${session.groupId}/${session.date}` : undefined
+  const back = session ? `/lessons/${session.groupId}/${session.date}` : undefined
   const choices = students.filter((x) => x.status === 'active' || x.id === studentId).sort((a, b) => a.name.localeCompare(b.name, 'ar'))
 
   return (
@@ -200,19 +214,14 @@ export function MushafScreen() {
             </button>
           ))}
           <span className="brush-count">
-            غلطات الحصة: <b>{toArabicDigits(lessonMistakes.length)}</b>
+            {target?.today ? 'غلطات حصة النهارده' : `غلطات حصة ${session ? longDate(session.date) : ''}`}: <b>{toArabicDigits(lessonMistakes.length)}</b>
           </span>
         </div>
-      ) : pending ? (
-        <div className="mushaf-brush card">
-          <span>حصة {student!.name} النهارده لسه متسجلتش.</span>
-          <button type="button" className="btn btn-primary" onClick={startLesson}>
-            سجّله حاضر وابدأ تعليم الأخطاء
-          </button>
-        </div>
       ) : student ? (
-        <p className="field-hint mushaf-note">لتسجيل الأخطاء، سجّل حضور {student.name} في حصة النهارده الأول.</p>
-      ) : null}
+        <p className="field-hint mushaf-note">مفيش حصص لـ{student.name} لسه، فالأخطاء مش هتتسجل. أخطاءه القديمة بس هي اللي بتظهر.</p>
+      ) : (
+        <p className="field-hint mushaf-note">اختار الطالب عشان تسجّل أخطاءه بدوسة على الكلمة.</p>
+      )}
 
       {failed ? (
         <section className="empty card">
